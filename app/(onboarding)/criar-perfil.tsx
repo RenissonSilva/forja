@@ -14,9 +14,11 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const WEEKLY_GOAL_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
+const TOTAL_STEPS = 2;
 
 export default function CreateProfileScreen() {
   const { create } = useProfile();
+  const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [heightCm, setHeightCm] = useState("170");
   const [weightKg, setWeightKg] = useState("70");
@@ -42,12 +44,26 @@ export default function CreateProfileScreen() {
     }
   }
 
-  async function handleSubmit() {
+  function handleBack() {
+    if (step === 2) {
+      setErrorMessage(null);
+      setStep(1);
+      return;
+    }
+    router.back();
+  }
+
+  function handleNext() {
     setErrorMessage(null);
     if (name.trim().length === 0) {
       setErrorMessage("Informe seu nome.");
       return;
     }
+    setStep(2);
+  }
+
+  async function handleSubmit() {
+    setErrorMessage(null);
 
     setIsSubmitting(true);
     try {
@@ -71,112 +87,142 @@ export default function CreateProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Voltar"
-            onPress={() => router.back()}
+            onPress={handleBack}
             style={styles.backButton}
           >
             <Icon name="chevron-left" size={15} color={colors.textPrimary} strokeWidth={2.2} />
           </Pressable>
           <View style={styles.progressDots}>
-            <View style={[styles.dot, styles.dotActive]} />
-            <View style={[styles.dot, styles.dotActive]} />
-            <View style={styles.dot} />
+            {Array.from({ length: TOTAL_STEPS }).map((_, index) => (
+              <View
+                key={index}
+                style={[styles.dot, index < step && styles.dotActive]}
+              />
+            ))}
           </View>
         </View>
 
-        <Text style={styles.title}>Criar perfil</Text>
-        <Text style={styles.subtitle}>
-          Usamos altura e peso para calcular seu IMC e acompanhar o progresso.
-        </Text>
+        {step === 1 ? (
+          <>
+            <Text style={styles.title}>Criar perfil</Text>
+            <Text style={styles.subtitle}>
+              Usamos altura e peso para calcular seu IMC e acompanhar o progresso.
+            </Text>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Escolher foto de perfil"
-          onPress={pickAvatar}
-          style={styles.avatarPicker}
-        >
-          {avatarUri ? (
-            <Image source={{ uri: avatarUri }} style={styles.avatarImage} contentFit="cover" />
-          ) : (
-            <Text style={styles.avatarPlaceholder}>foto{"\n"}opcional</Text>
-          )}
-          <View style={styles.avatarAddBadge}>
-            <Icon name="plus" size={14} color={colors.onPrimary} strokeWidth={2.6} />
-          </View>
-        </Pressable>
-
-        <TextField
-          label="NOME"
-          value={name}
-          onChangeText={setName}
-          placeholder="Seu nome"
-          autoCapitalize="words"
-        />
-
-        <View style={styles.row}>
-          <View style={styles.rowItem}>
-            <TextField
-              label="ALTURA"
-              value={heightCm}
-              onChangeText={setHeightCm}
-              keyboardType="numeric"
-              suffix="cm"
-            />
-          </View>
-          <View style={styles.rowItem}>
-            <TextField
-              label="PESO"
-              value={weightKg}
-              onChangeText={setWeightKg}
-              keyboardType="numeric"
-              suffix="kg"
-            />
-          </View>
-        </View>
-
-        <View style={styles.goalHeader}>
-          <Text style={styles.label}>DIAS DE TREINO POR SEMANA</Text>
-          <Text style={styles.goalValue}>{weeklyGoalDays} dias</Text>
-        </View>
-        <View style={styles.daysRow}>
-          {WEEKLY_GOAL_OPTIONS.map((day) => (
             <Pressable
-              key={day}
               accessibilityRole="button"
-              onPress={() => setWeeklyGoalDays(day)}
-              style={[styles.dayButton, day === weeklyGoalDays && styles.dayButtonActive]}
+              accessibilityLabel="Escolher foto de perfil"
+              onPress={pickAvatar}
+              style={styles.avatarPicker}
             >
-              <Text style={[styles.dayLabel, day === weeklyGoalDays && styles.dayLabelActive]}>
-                {day}
-              </Text>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.avatarImage} contentFit="cover" />
+              ) : (
+                <Text style={styles.avatarPlaceholder}>foto{"\n"}opcional</Text>
+              )}
+              <View style={styles.avatarAddBadge}>
+                <Icon name="plus" size={14} color={colors.onPrimary} strokeWidth={2.6} />
+              </View>
             </Pressable>
-          ))}
-        </View>
-        <Text style={styles.hint}>
-          Sua meta mensal será de {weeklyGoalDays * 4} treinos. Você pode mudar isso depois em
-          Ajustes.
-        </Text>
 
-        <View style={styles.reminderRow}>
-          <Text style={styles.reminderLabel}>Lembrete nos dias de treino</Text>
-          <Toggle value={remindersEnabled} onValueChange={setRemindersEnabled} />
-        </View>
+            <TextField
+              label="NOME"
+              value={name}
+              onChangeText={setName}
+              placeholder="Seu nome"
+              autoCapitalize="words"
+            />
 
-        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+            <View style={styles.row}>
+              <View style={styles.rowItem}>
+                <TextField
+                  label="ALTURA"
+                  value={heightCm}
+                  onChangeText={setHeightCm}
+                  keyboardType="numeric"
+                  suffix="cm"
+                />
+              </View>
+              <View style={styles.rowItem}>
+                <TextField
+                  label="PESO"
+                  value={weightKg}
+                  onChangeText={setWeightKg}
+                  keyboardType="numeric"
+                  suffix="kg"
+                />
+              </View>
+            </View>
+          </>
+        ) : (
+          <>
+            <Text style={styles.title}>Sua rotina de treino</Text>
+            <Text style={styles.subtitle}>
+              Defina quantos dias por semana pretende treinar e ative lembretes para não perder o
+              ritmo.
+            </Text>
 
-        <Button label="Continuar" onPress={handleSubmit} loading={isSubmitting} />
+            <View style={styles.goalHeader}>
+              <Text style={styles.label}>DIAS DE TREINO POR SEMANA</Text>
+              <Text style={styles.goalValue}>{weeklyGoalDays} dias</Text>
+            </View>
+            <View style={styles.daysRow}>
+              {WEEKLY_GOAL_OPTIONS.map((day) => (
+                <Pressable
+                  key={day}
+                  accessibilityRole="button"
+                  onPress={() => setWeeklyGoalDays(day)}
+                  style={[styles.dayButton, day === weeklyGoalDays && styles.dayButtonActive]}
+                >
+                  <Text style={[styles.dayLabel, day === weeklyGoalDays && styles.dayLabelActive]}>
+                    {day}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={styles.hint}>
+              Sua meta mensal será de {weeklyGoalDays * 4} treinos. Você pode mudar isso depois em
+              Ajustes.
+            </Text>
+
+            <View style={styles.reminderRow}>
+              <Text style={styles.reminderLabel}>Lembrete nos dias de treino</Text>
+              <Toggle value={remindersEnabled} onValueChange={setRemindersEnabled} />
+            </View>
+          </>
+        )}
       </ScrollView>
+
+      <View style={styles.footer}>
+        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+        {step === 1 ? (
+          <Button label="Continuar" onPress={handleNext} />
+        ) : (
+          <Button label="Continuar" onPress={handleSubmit} loading={isSubmitting} />
+        )}
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  scroll: { flex: 1 },
   content: { padding: spacing.xxl, gap: spacing.lg },
+  footer: {
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+    gap: spacing.sm,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   backButton: {
     width: 38,
