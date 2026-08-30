@@ -1,31 +1,36 @@
 import { Button } from "@presentation/components/ui/Button";
 import { Icon } from "@presentation/components/ui/Icon";
 import { ExerciseCatalogItem } from "@presentation/components/features/ExerciseCatalogItem";
+import { MuscleGroupFilter } from "@presentation/components/features/MuscleGroupFilter";
 import { WorkoutExerciseFormRow } from "@presentation/components/features/WorkoutExerciseFormRow";
 import { useExercises } from "@presentation/hooks/useExercises";
 import { useWorkoutPlan } from "@presentation/hooks/useWorkoutPlan";
 import { colors } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
 import { fontFamily, typography } from "@presentation/theme/typography";
+import { MuscleGroup } from "@domain/entities/Exercise";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { toast } from "sonner-native";
 
 export default function EditarFichaScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { plan, addExercise, updateExercise, removeExercise, rename } = useWorkoutPlan(id);
+  const { id, fresh } = useLocalSearchParams<{ id: string; fresh?: string }>();
+  const isFresh = fresh === "1";
+  const { plan, addExercise, updateExercise, removeExercise, rename, remove } = useWorkoutPlan(id);
   const [nameDraft, setNameDraft] = useState("");
   const [syncedPlanId, setSyncedPlanId] = useState<string | undefined>(undefined);
   const [query, setQuery] = useState("");
+  const [muscleGroupFilter, setMuscleGroupFilter] = useState<MuscleGroup | null>(null);
   const { exercises: allExercises } = useExercises("");
-  const { exercises: searchResults } = useExercises(query);
+  const { exercises: searchResults } = useExercises(query, muscleGroupFilter ?? undefined);
 
   // Adjust local draft state when a different plan finishes loading (React's
   // documented pattern for syncing state from a prop, without an effect).
   if (plan && plan.id !== syncedPlanId) {
     setSyncedPlanId(plan.id);
-    setNameDraft(plan.name);
+    setNameDraft(isFresh ? "" : plan.name);
   }
 
   const exercisesById = useMemo(
@@ -37,7 +42,35 @@ export default function EditarFichaScreen() {
 
   async function handleNameBlur() {
     if (!plan || nameDraft.trim().length === 0 || nameDraft === plan.name) return;
-    await rename(nameDraft);
+    try {
+      await rename(nameDraft);
+      toast.success("Treino atualizado");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Não foi possível atualizar o treino.");
+    }
+  }
+
+  function handleDelete() {
+    Alert.alert(
+      "Excluir treino",
+      "Tem certeza que deseja excluir este treino? Essa ação não pode ser desfeita.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await remove();
+              toast.success("Treino excluído");
+              router.back();
+            } catch (err: unknown) {
+              toast.error(err instanceof Error ? err.message : "Não foi possível excluir o treino.");
+            }
+          },
+        },
+      ],
+    );
   }
 
   return (
@@ -52,7 +85,15 @@ export default function EditarFichaScreen() {
           >
             <Icon name="chevron-left" size={15} color={colors.textPrimary} strokeWidth={2.2} />
           </Pressable>
-          <Text style={styles.title}>Editar treino</Text>
+          <Text style={styles.title}>{isFresh ? "Novo treino" : "Editar treino"}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Excluir treino"
+            onPress={handleDelete}
+            style={styles.deleteButton}
+          >
+            <Icon name="trash" size={15} color={colors.danger} strokeWidth={2.2} />
+          </Pressable>
         </View>
 
         <TextInput
@@ -62,6 +103,7 @@ export default function EditarFichaScreen() {
           placeholder="Nome do treino"
           placeholderTextColor={colors.textMuted}
           style={styles.nameInput}
+          autoFocus={isFresh}
         />
 
         <View style={styles.searchRow}>
@@ -77,6 +119,8 @@ export default function EditarFichaScreen() {
             {searchResults.length} de {allExercises.length}
           </Text>
         </View>
+
+        <MuscleGroupFilter value={muscleGroupFilter} onChange={setMuscleGroupFilter} />
 
         <View style={styles.catalogList}>
           {searchResults.map((exercise) => (
@@ -132,10 +176,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   title: {
+    flex: 1,
     fontFamily: fontFamily.semiBold,
     fontSize: 19,
     letterSpacing: -0.5,
     color: colors.textPrimary,
+  },
+  deleteButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceSunken,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
   nameInput: {
     height: 54,

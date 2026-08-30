@@ -1,4 +1,5 @@
 import { colors } from "@presentation/theme/colors";
+import { fontFamily } from "@presentation/theme/typography";
 import { useProfile } from "@presentation/hooks/useProfile";
 import { AppServicesProvider } from "@presentation/providers/AppServicesProvider";
 import { StatusBar } from "expo-status-bar";
@@ -7,6 +8,7 @@ import React from "react";
 import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Toaster } from "sonner-native";
 
 export default function RootLayout() {
   return (
@@ -16,6 +18,14 @@ export default function RootLayout() {
         <AppServicesProvider>
           <RootNavigator />
         </AppServicesProvider>
+        <Toaster
+          theme="dark"
+          position="bottom-center"
+          toastOptions={{
+            style: { backgroundColor: colors.surfaceDeep, borderColor: colors.border },
+            titleStyle: { fontFamily: fontFamily.medium, color: colors.textPrimary },
+          }}
+        />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

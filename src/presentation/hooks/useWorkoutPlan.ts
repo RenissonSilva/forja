@@ -86,5 +86,10 @@ export function useWorkoutPlan(workoutPlanId: string | undefined) {
     [services, workoutPlanId],
   );
 
-  return { plan, isLoading, refresh, addExercise, updateExercise, removeExercise, rename };
+  const remove = useCallback(async () => {
+    if (!workoutPlanId) return;
+    await services.workoutPlans.delete.execute({ workoutPlanId });
+  }, [services, workoutPlanId]);
+
+  return { plan, isLoading, refresh, addExercise, updateExercise, removeExercise, rename, remove };
 }

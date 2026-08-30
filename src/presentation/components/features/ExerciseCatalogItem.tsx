@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Exercise } from "@domain/entities/Exercise";
 import { colors } from "../../theme/colors";
+import { muscleGroupLabels } from "../../theme/muscleGroups";
 import { fontFamily } from "../../theme/typography";
 import { Icon } from "../ui/Icon";
 
@@ -20,17 +21,13 @@ export function ExerciseCatalogItem({ exercise, onAdd }: ExerciseCatalogItemProp
     >
       <View style={styles.info}>
         <Text style={styles.name}>{exercise.name}</Text>
-        <Text style={styles.group}>{capitalize(exercise.muscleGroup)}</Text>
+        <Text style={styles.group}>{muscleGroupLabels[exercise.muscleGroup]}</Text>
       </View>
       <View style={styles.addButton}>
         <Icon name="plus" size={14} color={colors.primary} strokeWidth={2.6} />
       </View>
     </Pressable>
   );
-}
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 const styles = StyleSheet.create({

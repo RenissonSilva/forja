@@ -15,6 +15,7 @@ export type IconName =
   | "check"
   | "target"
   | "search"
+  | "trash"
   | "x";
 
 interface IconProps {
@@ -167,6 +168,19 @@ export function Icon({
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
           <Circle cx={11} cy={11} r={6.5} stroke={color} strokeWidth={strokeWidth} />
           <Path d="M16 16l4 4" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+        </Svg>
+      );
+    case "trash":
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M5 7h14M9.5 7V5a1.5 1.5 0 011.5-1.5h2A1.5 1.5 0 0114.5 5v2M18 7l-.8 12.1A2 2 0 0115.2 21H8.8a2 2 0 01-2-1.9L6 7"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <Path d="M10 11v6M14 11v6" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
         </Svg>
       );
     case "x":

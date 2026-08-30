@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   date: { fontFamily: fontFamily.light, fontSize: 12.5, color: colors.textMuted },
-  greeting: { ...typography.screenTitle, color: colors.textPrimary },
+  greeting: { ...typography.screenTitle, color: colors.textPrimary, marginTop: 4 },
   weekHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { WorkoutPlanExercise } from "@domain/entities/WorkoutPlanExercise";
 import { Exercise } from "@domain/entities/Exercise";
 import { colors } from "../../theme/colors";
+import { muscleGroupLabels } from "../../theme/muscleGroups";
 import { fontFamily } from "../../theme/typography";
 import { Icon } from "../ui/Icon";
 import { Stepper } from "../ui/Stepper";
@@ -36,7 +37,9 @@ export function WorkoutExerciseFormRow({
         </View>
         <View style={styles.info}>
           <Text style={styles.name}>{exercise?.name ?? "Exercício"}</Text>
-          {exercise ? <Text style={styles.group}>{capitalize(exercise.muscleGroup)}</Text> : null}
+          {exercise ? (
+            <Text style={styles.group}>{muscleGroupLabels[exercise.muscleGroup]}</Text>
+          ) : null}
         </View>
         <Pressable
           accessibilityRole="button"
@@ -81,10 +84,6 @@ export function WorkoutExerciseFormRow({
       </View>
     </View>
   );
-}
-
-function capitalize(text: string): string {
-  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 const styles = StyleSheet.create({
