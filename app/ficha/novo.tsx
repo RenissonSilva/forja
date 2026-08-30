@@ -1,5 +1,6 @@
 import { ExerciseCatalogItem } from "@presentation/components/features/ExerciseCatalogItem";
 import { MuscleGroupFilter } from "@presentation/components/features/MuscleGroupFilter";
+import { WorkoutExerciseFormRow } from "@presentation/components/features/WorkoutExerciseFormRow";
 import { Button } from "@presentation/components/ui/Button";
 import { Icon } from "@presentation/components/ui/Icon";
 import { useExercises } from "@presentation/hooks/useExercises";
@@ -9,16 +10,29 @@ import { colors } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
 import { fontFamily, typography } from "@presentation/theme/typography";
 import { MuscleGroup } from "@domain/entities/Exercise";
+import { WorkoutPlanExercise } from "@domain/entities/WorkoutPlanExercise";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+interface ExerciseConfig {
+  sets: number;
+  reps: number;
+  loadKg: number;
+  seatAdjustment: string | null;
+}
+
+const DEFAULT_CONFIG: ExerciseConfig = { sets: 3, reps: 10, loadKg: 0, seatAdjustment: null };
+const TOTAL_STEPS = 2;
+
 export default function NovoTreinoScreen() {
   const { profile } = useProfile();
   const services = useAppServices();
+  const [step, setStep] = useState<1 | 2>(1);
   const [name, setName] = useState("");
   const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
+  const [configs, setConfigs] = useState<Record<string, ExerciseConfig>>({});
   const [query, setQuery] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,7 +42,8 @@ export default function NovoTreinoScreen() {
 
   if (!profile) return null;
 
-  const canSave = name.trim().length > 0 && selectedExerciseIds.length > 0 && !isSaving;
+  const exercisesById = new Map(allExercises.map((exercise) => [exercise.id, exercise]));
+  const canContinue = name.trim().length > 0 && selectedExerciseIds.length > 0;
 
   function toggleExercise(exerciseId: string) {
     setSelectedExerciseIds((current) =>
@@ -36,10 +51,39 @@ export default function NovoTreinoScreen() {
         ? current.filter((id) => id !== exerciseId)
         : [...current, exerciseId],
     );
+    setConfigs((current) =>
+      current[exerciseId] ? current : { ...current, [exerciseId]: DEFAULT_CONFIG },
+    );
+  }
+
+  function removeExercise(exerciseId: string) {
+    setSelectedExerciseIds((current) => current.filter((id) => id !== exerciseId));
+  }
+
+  function updateConfig(exerciseId: string, patch: Partial<ExerciseConfig>) {
+    setConfigs((current) => ({
+      ...current,
+      [exerciseId]: { ...(current[exerciseId] ?? DEFAULT_CONFIG), ...patch },
+    }));
+  }
+
+  function handleBack() {
+    if (step === 2) {
+      setError(null);
+      setStep(1);
+      return;
+    }
+    router.back();
+  }
+
+  function handleNext() {
+    if (!canContinue) return;
+    setError(null);
+    setStep(2);
   }
 
   async function handleSave() {
-    if (!profile || !canSave) return;
+    if (!profile || isSaving || selectedExerciseIds.length === 0) return;
     setIsSaving(true);
     setError(null);
     try {
@@ -48,15 +92,17 @@ export default function NovoTreinoScreen() {
         name: name.trim(),
       });
       for (const exerciseId of selectedExerciseIds) {
+        const config = configs[exerciseId] ?? DEFAULT_CONFIG;
         await services.workoutPlans.addExercise.execute({
           workoutPlanId: plan.id,
           exerciseId,
-          sets: 3,
-          reps: 10,
-          loadKg: 0,
+          sets: config.sets,
+          reps: config.reps,
+          loadKg: config.loadKg,
+          seatAdjustment: config.seatAdjustment,
         });
       }
-      router.replace(`/ficha/${plan.id}/editar`);
+      router.back();
     } catch (err: unknown) {
       setIsSaving(false);
       setError(err instanceof Error ? err.message : "Não foi possível criar o treino.");
@@ -70,59 +116,112 @@ export default function NovoTreinoScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Voltar"
-            onPress={() => router.back()}
+            onPress={handleBack}
             style={styles.backButton}
           >
             <Icon name="chevron-left" size={15} color={colors.textPrimary} strokeWidth={2.2} />
           </Pressable>
-          <Text style={styles.title}>Novo treino</Text>
+          <View style={styles.progressDots}>
+            {Array.from({ length: TOTAL_STEPS }).map((_, index) => (
+              <View key={index} style={[styles.dot, index < step && styles.dotActive]} />
+            ))}
+          </View>
         </View>
 
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder="Nome do treino"
-          placeholderTextColor={colors.textMuted}
-          style={styles.nameInput}
-          autoFocus
-        />
+        <Text style={styles.title}>{step === 1 ? "Novo treino" : "Configurar exercícios"}</Text>
 
-        <Text style={styles.hint}>
-          {selectedExerciseIds.length > 0
-            ? `${selectedExerciseIds.length} exercício${selectedExerciseIds.length > 1 ? "s" : ""} selecionado${selectedExerciseIds.length > 1 ? "s" : ""}`
-            : "Escolha ao menos um exercício para criar o treino."}
-        </Text>
+        {step === 1 ? (
+          <>
+            <TextInput
+              value={name}
+              onChangeText={setName}
+              placeholder="Nome do treino"
+              placeholderTextColor={colors.textMuted}
+              style={styles.nameInput}
+              autoFocus
+            />
 
-        <View style={styles.searchRow}>
-          <Icon name="search" size={16} color={colors.textMuted} strokeWidth={2} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Buscar exercício"
-            placeholderTextColor={colors.textMuted}
-            style={styles.searchInput}
-          />
-          <Text style={styles.searchCount}>
-            {searchResults.length} de {allExercises.length}
-          </Text>
-        </View>
+            <Text style={styles.hint}>
+              {selectedExerciseIds.length > 0
+                ? `${selectedExerciseIds.length} exercício${selectedExerciseIds.length > 1 ? "s" : ""} selecionado${selectedExerciseIds.length > 1 ? "s" : ""}`
+                : "Escolha ao menos um exercício para continuar."}
+            </Text>
 
-        <MuscleGroupFilter value={muscleGroupFilter} onChange={setMuscleGroupFilter} />
+            <View style={styles.searchRow}>
+              <Icon name="search" size={16} color={colors.textMuted} strokeWidth={2} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Buscar exercício"
+                placeholderTextColor={colors.textMuted}
+                style={styles.searchInput}
+              />
+              <Text style={styles.searchCount}>
+                {searchResults.length} de {allExercises.length}
+              </Text>
+            </View>
+
+            <MuscleGroupFilter value={muscleGroupFilter} onChange={setMuscleGroupFilter} />
+
+            <View style={styles.catalogList}>
+              {searchResults.map((exercise) => (
+                <ExerciseCatalogItem
+                  key={exercise.id}
+                  exercise={exercise}
+                  selected={selectedExerciseIds.includes(exercise.id)}
+                  onAdd={() => toggleExercise(exercise.id)}
+                />
+              ))}
+            </View>
+          </>
+        ) : (
+          <>
+            <Text style={styles.hint}>
+              Defina séries, repetições, peso e ajustes de cadeira para cada exercício antes de
+              salvar o treino.
+            </Text>
+
+            <View style={styles.exercisesList}>
+              {selectedExerciseIds.map((exerciseId, index) => {
+                const config = configs[exerciseId] ?? DEFAULT_CONFIG;
+                const planExercise = WorkoutPlanExercise.restore({
+                  id: exerciseId,
+                  exerciseId,
+                  order: index,
+                  ...config,
+                });
+                return (
+                  <WorkoutExerciseFormRow
+                    key={exerciseId}
+                    order={index + 1}
+                    exercise={exercisesById.get(exerciseId)}
+                    planExercise={planExercise}
+                    onChangeSets={(value) => updateConfig(exerciseId, { sets: value })}
+                    onChangeReps={(value) => updateConfig(exerciseId, { reps: value })}
+                    onChangeLoad={(value) => updateConfig(exerciseId, { loadKg: value })}
+                    onChangeSeatAdjustment={(value) =>
+                      updateConfig(exerciseId, { seatAdjustment: value })
+                    }
+                    onRemove={() => removeExercise(exerciseId)}
+                  />
+                );
+              })}
+            </View>
+          </>
+        )}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
-        <View style={styles.catalogList}>
-          {searchResults.map((exercise) => (
-            <ExerciseCatalogItem
-              key={exercise.id}
-              exercise={exercise}
-              selected={selectedExerciseIds.includes(exercise.id)}
-              onAdd={() => toggleExercise(exercise.id)}
-            />
-          ))}
-        </View>
-
-        <Button label="Salvar treino" onPress={handleSave} disabled={!canSave} loading={isSaving} />
+        {step === 1 ? (
+          <Button label="Continuar" onPress={handleNext} disabled={!canContinue} />
+        ) : (
+          <Button
+            label="Salvar treino"
+            onPress={handleSave}
+            disabled={selectedExerciseIds.length === 0 || isSaving}
+            loading={isSaving}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -131,7 +230,7 @@ export default function NovoTreinoScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.xxl, gap: spacing.md },
-  header: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: 4 },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   backButton: {
     width: 38,
     height: 38,
@@ -142,6 +241,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  progressDots: { flexDirection: "row", gap: 6 },
+  dot: { width: 26, height: 4, borderRadius: 2, backgroundColor: colors.borderStrong },
+  dotActive: { backgroundColor: colors.primary },
   title: {
     fontFamily: fontFamily.semiBold,
     fontSize: 19,
@@ -180,4 +282,5 @@ const styles = StyleSheet.create({
   searchCount: { fontFamily: fontFamily.medium, fontSize: 11, color: colors.textFaint },
   error: { ...typography.body, color: colors.danger },
   catalogList: { gap: 7 },
+  exercisesList: { gap: 10 },
 });

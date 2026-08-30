@@ -31,6 +31,8 @@ export const colors = {
   onPrimary: "#150A02",
 
   success: "#5FAE7A",
+  successMuted: "rgba(95,174,122,0.14)",
+  successBorder: "rgba(95,174,122,0.4)",
   danger: "#B5484B",
 } as const;
 

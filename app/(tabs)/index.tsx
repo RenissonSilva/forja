@@ -27,6 +27,11 @@ export default function HomeScreen() {
 
   const todayPlan = plans.find((plan) => plan.isMarkedToday) ?? null;
   const weekCompletedCount = days.filter((day) => day.attendance !== null).length;
+  const lastCompletedPlan = plans.reduce<(typeof plans)[number] | null>((latest, plan) => {
+    if (!plan.lastCompletedAt) return latest;
+    if (!latest?.lastCompletedAt || plan.lastCompletedAt > latest.lastCompletedAt) return plan;
+    return latest;
+  }, null);
 
   function startSession(plan: (typeof plans)[number]) {
     router.push(`/treino/${plan.id}/sessao`);
@@ -60,14 +65,14 @@ export default function HomeScreen() {
         ) : plans.length > 0 ? (
           <Card>
             <Text style={styles.emptyToday}>
-              Toque na ★ de uma ficha abaixo para marcá-la como o treino de hoje.
+              Toque na ★ de uma ficha abaixo para marcá-la como o treino da vez.
             </Text>
           </Card>
         ) : null}
 
         <View style={styles.listHeader}>
           <Text style={styles.listTitle}>Meus treinos</Text>
-          <Text style={styles.listHint}>toque na estrela para marcar o de hoje</Text>
+          <Text style={styles.listHint}>Toque na estrela para marcar o treino da vez</Text>
         </View>
 
         <View style={styles.list}>
@@ -75,6 +80,7 @@ export default function HomeScreen() {
             <WorkoutPlanCard
               key={plan.id}
               plan={plan}
+              isLastCompleted={plan.id === lastCompletedPlan?.id}
               onPress={() => router.push(`/ficha/${plan.id}/editar`)}
               onToggleToday={() => markAsToday(plan.id)}
               onStart={() => startSession(plan)}

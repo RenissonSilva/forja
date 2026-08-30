@@ -30,6 +30,7 @@ export class WorkoutPlanMapper {
       name: planRow.name,
       colorTag: planRow.colorTag as WorkoutPlanColorTag,
       isMarkedToday: planRow.isMarkedToday,
+      lastCompletedAt: planRow.lastCompletedAt,
       exercises,
       createdAt: planRow.createdAt,
       updatedAt: planRow.updatedAt,
@@ -43,6 +44,7 @@ export class WorkoutPlanMapper {
       name: plan.name,
       colorTag: plan.colorTag,
       isMarkedToday: plan.isMarkedToday,
+      lastCompletedAt: plan.lastCompletedAt,
       createdAt: plan.createdAt,
       updatedAt: plan.updatedAt,
     };

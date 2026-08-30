@@ -88,7 +88,7 @@ SQLite:
   cobrindo caminhos felizes e casos de borda (valores fora do intervalo, nomes vazios,
   reordenação ao remover exercício, etc.)
 - **Application**: os use cases com lógica de orquestração real — criação combinada de perfil e
-  peso inicial, exclusividade do "treino de hoje" (★), validação cruzada ao adicionar exercício
+  peso inicial, exclusividade do "treino da vez" (★), validação cruzada ao adicionar exercício
   a uma ficha, montagem do grid mensal do calendário, cálculo de progresso da meta
 
 Use cases que são puro repasse ao repositório (`GetProfile`, `ListWorkoutPlans`, etc.) foram

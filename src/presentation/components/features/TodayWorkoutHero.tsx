@@ -20,7 +20,7 @@ export function TodayWorkoutHero({ plan, onStart }: TodayWorkoutHeroProps) {
       style={styles.card}
     >
       <View style={styles.decorCircle} />
-      <Text style={styles.label}>TREINO DE HOJE</Text>
+      <Text style={styles.label}>TREINO DA VEZ</Text>
       <Text style={styles.name} numberOfLines={2}>
         {plan.name.replace(" — ", " · ")}
       </Text>

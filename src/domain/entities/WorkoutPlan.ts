@@ -17,6 +17,7 @@ export interface WorkoutPlanProps {
   name: string;
   colorTag: WorkoutPlanColorTag;
   isMarkedToday: boolean;
+  lastCompletedAt: Date | null;
   exercises: WorkoutPlanExercise[];
   createdAt: Date;
   updatedAt: Date;
@@ -39,6 +40,7 @@ export class WorkoutPlan {
         name: nameResult.value,
         colorTag: props.colorTag,
         isMarkedToday: false,
+        lastCompletedAt: null,
         exercises: [],
         createdAt: now,
         updatedAt: now,
@@ -96,6 +98,10 @@ export class WorkoutPlan {
     return new WorkoutPlan({ ...this.props, isMarkedToday: false, updatedAt: now });
   }
 
+  markCompletedNow(now: Date = new Date()): WorkoutPlan {
+    return new WorkoutPlan({ ...this.props, lastCompletedAt: now, updatedAt: now });
+  }
+
   private static validateName(name: string): Result<string, InvalidWorkoutPlanNameError> {
     const trimmed = name.trim();
     if (trimmed.length < 1 || trimmed.length > 60) {
@@ -122,6 +128,10 @@ export class WorkoutPlan {
 
   get isMarkedToday(): boolean {
     return this.props.isMarkedToday;
+  }
+
+  get lastCompletedAt(): Date | null {
+    return this.props.lastCompletedAt;
   }
 
   get exercises(): readonly WorkoutPlanExercise[] {

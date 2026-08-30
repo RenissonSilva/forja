@@ -7,12 +7,19 @@ import { Icon } from "../ui/Icon";
 
 interface WorkoutPlanCardProps {
   plan: WorkoutPlan;
+  isLastCompleted?: boolean;
   onPress: () => void;
   onToggleToday: () => void;
   onStart: () => void;
 }
 
-export function WorkoutPlanCard({ plan, onPress, onToggleToday, onStart }: WorkoutPlanCardProps) {
+export function WorkoutPlanCard({
+  plan,
+  isLastCompleted,
+  onPress,
+  onToggleToday,
+  onStart,
+}: WorkoutPlanCardProps) {
   const accentColor = workoutPlanColors[plan.colorTag];
 
   return (
@@ -35,6 +42,11 @@ export function WorkoutPlanCard({ plan, onPress, onToggleToday, onStart }: Worko
               <Text style={styles.badgeLabel}>HOJE</Text>
             </View>
           ) : null}
+          {isLastCompleted ? (
+            <View style={styles.lastCompletedBadge}>
+              <Text style={styles.lastCompletedBadgeLabel}>ÚLTIMO FEITO</Text>
+            </View>
+          ) : null}
         </View>
         <Text style={styles.meta}>
           {plan.exercises.length} exercícios · ~{plan.estimatedDurationMinutes} min
@@ -44,7 +56,7 @@ export function WorkoutPlanCard({ plan, onPress, onToggleToday, onStart }: Worko
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={
-            plan.isMarkedToday ? "Desmarcar como treino de hoje" : "Marcar como treino de hoje"
+            plan.isMarkedToday ? "Desmarcar como treino da vez" : "Marcar como treino da vez"
           }
           onPress={onToggleToday}
           style={[styles.iconButton, plan.isMarkedToday && styles.iconButtonActive]}
@@ -96,6 +108,20 @@ const styles = StyleSheet.create({
     fontSize: 9.5,
     letterSpacing: 0.5,
     color: colors.onPrimary,
+  },
+  lastCompletedBadge: {
+    backgroundColor: colors.successMuted,
+    borderWidth: 1,
+    borderColor: colors.successBorder,
+    borderRadius: 5,
+    paddingVertical: 2,
+    paddingHorizontal: 7,
+  },
+  lastCompletedBadgeLabel: {
+    fontFamily: fontFamily.semiBold,
+    fontSize: 9.5,
+    letterSpacing: 0.5,
+    color: colors.success,
   },
   meta: { fontFamily: fontFamily.light, fontSize: 12, color: colors.textMuted },
   actions: { flexDirection: "row", gap: 8 },

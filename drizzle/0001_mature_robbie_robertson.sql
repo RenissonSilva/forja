@@ -1,0 +1,1 @@
+ALTER TABLE `workout_plans` ADD `last_completed_at` integer;

@@ -27,6 +27,7 @@ export const workoutPlans = sqliteTable("workout_plans", {
   name: text("name").notNull(),
   colorTag: text("color_tag").notNull(),
   isMarkedToday: integer("is_marked_today", { mode: "boolean" }).notNull(),
+  lastCompletedAt: integer("last_completed_at", { mode: "timestamp_ms" }),
   createdAt: integer("created_at", { mode: "timestamp_ms" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp_ms" }).notNull(),
 });

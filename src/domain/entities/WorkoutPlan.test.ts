@@ -94,6 +94,17 @@ describe("WorkoutPlan mark as today", () => {
   });
 });
 
+describe("WorkoutPlan#markCompletedNow", () => {
+  it("starts with no completion recorded", () => {
+    expect(makePlan().lastCompletedAt).toBeNull();
+  });
+
+  it("records the completion timestamp", () => {
+    const now = new Date("2026-08-30T12:00:00Z");
+    expect(makePlan().markCompletedNow(now).lastCompletedAt).toEqual(now);
+  });
+});
+
 describe("WorkoutPlan#rename", () => {
   it("renames the plan, trimming whitespace", () => {
     const result = makePlan().rename("  Treino B — Costas  ");
