@@ -1,0 +1,42 @@
+# dependencies
+node_modules/
+
+# expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# native projects (regenerated via `expo prebuild` / `expo run:android`)
+/android/
+/ios/
+
+# native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# metro
+.metro-health-check*
+
+# testing
+coverage/
+
+# env
+.env
+.env.local
+
+# logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+
+# editors
+.vscode/
+.idea/
