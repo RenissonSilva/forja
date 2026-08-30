@@ -16,8 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
 export default function EditarFichaScreen() {
-  const { id, fresh } = useLocalSearchParams<{ id: string; fresh?: string }>();
-  const isFresh = fresh === "1";
+  const { id } = useLocalSearchParams<{ id: string }>();
   const { plan, addExercise, updateExercise, removeExercise, rename, remove } = useWorkoutPlan(id);
   const [nameDraft, setNameDraft] = useState("");
   const [syncedPlanId, setSyncedPlanId] = useState<string | undefined>(undefined);
@@ -30,7 +29,7 @@ export default function EditarFichaScreen() {
   // documented pattern for syncing state from a prop, without an effect).
   if (plan && plan.id !== syncedPlanId) {
     setSyncedPlanId(plan.id);
-    setNameDraft(isFresh ? "" : plan.name);
+    setNameDraft(plan.name);
   }
 
   const exercisesById = useMemo(
@@ -85,7 +84,7 @@ export default function EditarFichaScreen() {
           >
             <Icon name="chevron-left" size={15} color={colors.textPrimary} strokeWidth={2.2} />
           </Pressable>
-          <Text style={styles.title}>{isFresh ? "Novo treino" : "Editar treino"}</Text>
+          <Text style={styles.title}>Editar treino</Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Excluir treino"
@@ -103,7 +102,6 @@ export default function EditarFichaScreen() {
           placeholder="Nome do treino"
           placeholderTextColor={colors.textMuted}
           style={styles.nameInput}
-          autoFocus={isFresh}
         />
 
         <View style={styles.searchRow}>

@@ -1,5 +1,6 @@
 import { ExerciseCatalogItem } from "@presentation/components/features/ExerciseCatalogItem";
 import { MuscleGroupFilter } from "@presentation/components/features/MuscleGroupFilter";
+import { Button } from "@presentation/components/ui/Button";
 import { Icon } from "@presentation/components/ui/Icon";
 import { useExercises } from "@presentation/hooks/useExercises";
 import { useProfile } from "@presentation/hooks/useProfile";
@@ -10,14 +11,16 @@ import { fontFamily, typography } from "@presentation/theme/typography";
 import { MuscleGroup } from "@domain/entities/Exercise";
 import { router } from "expo-router";
 import React, { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function NovoTreinoScreen() {
   const { profile } = useProfile();
   const services = useAppServices();
+  const [name, setName] = useState("");
+  const [selectedExerciseIds, setSelectedExerciseIds] = useState<string[]>([]);
   const [query, setQuery] = useState("");
-  const [isCreating, setIsCreating] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [muscleGroupFilter, setMuscleGroupFilter] = useState<MuscleGroup | null>(null);
   const { exercises: allExercises } = useExercises("");
@@ -25,25 +28,37 @@ export default function NovoTreinoScreen() {
 
   if (!profile) return null;
 
-  async function handleSelectExercise(exerciseId: string) {
-    if (isCreating || !profile) return;
-    setIsCreating(true);
+  const canSave = name.trim().length > 0 && selectedExerciseIds.length > 0 && !isSaving;
+
+  function toggleExercise(exerciseId: string) {
+    setSelectedExerciseIds((current) =>
+      current.includes(exerciseId)
+        ? current.filter((id) => id !== exerciseId)
+        : [...current, exerciseId],
+    );
+  }
+
+  async function handleSave() {
+    if (!profile || !canSave) return;
+    setIsSaving(true);
     setError(null);
     try {
       const plan = await services.workoutPlans.create.execute({
         profileId: profile.id,
-        name: "Novo treino",
+        name: name.trim(),
       });
-      await services.workoutPlans.addExercise.execute({
-        workoutPlanId: plan.id,
-        exerciseId,
-        sets: 3,
-        reps: 10,
-        loadKg: 0,
-      });
-      router.replace(`/ficha/${plan.id}/editar?fresh=1`);
+      for (const exerciseId of selectedExerciseIds) {
+        await services.workoutPlans.addExercise.execute({
+          workoutPlanId: plan.id,
+          exerciseId,
+          sets: 3,
+          reps: 10,
+          loadKg: 0,
+        });
+      }
+      router.replace(`/ficha/${plan.id}/editar`);
     } catch (err: unknown) {
-      setIsCreating(false);
+      setIsSaving(false);
       setError(err instanceof Error ? err.message : "Não foi possível criar o treino.");
     }
   }
@@ -63,7 +78,20 @@ export default function NovoTreinoScreen() {
           <Text style={styles.title}>Novo treino</Text>
         </View>
 
-        <Text style={styles.hint}>Escolha ao menos um exercício para criar o treino.</Text>
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          placeholder="Nome do treino"
+          placeholderTextColor={colors.textMuted}
+          style={styles.nameInput}
+          autoFocus
+        />
+
+        <Text style={styles.hint}>
+          {selectedExerciseIds.length > 0
+            ? `${selectedExerciseIds.length} exercício${selectedExerciseIds.length > 1 ? "s" : ""} selecionado${selectedExerciseIds.length > 1 ? "s" : ""}`
+            : "Escolha ao menos um exercício para criar o treino."}
+        </Text>
 
         <View style={styles.searchRow}>
           <Icon name="search" size={16} color={colors.textMuted} strokeWidth={2} />
@@ -88,17 +116,14 @@ export default function NovoTreinoScreen() {
             <ExerciseCatalogItem
               key={exercise.id}
               exercise={exercise}
-              onAdd={() => handleSelectExercise(exercise.id)}
+              selected={selectedExerciseIds.includes(exercise.id)}
+              onAdd={() => toggleExercise(exercise.id)}
             />
           ))}
         </View>
-      </ScrollView>
 
-      {isCreating ? (
-        <View style={styles.overlay}>
-          <ActivityIndicator color={colors.primary} size="large" />
-        </View>
-      ) : null}
+        <Button label="Salvar treino" onPress={handleSave} disabled={!canSave} loading={isSaving} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -123,6 +148,17 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     color: colors.textPrimary,
   },
+  nameInput: {
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceSunken,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: 16,
+    fontFamily: fontFamily.semiBold,
+    fontSize: 16,
+    color: colors.textPrimary,
+  },
   hint: { ...typography.body, color: colors.textSecondary },
   searchRow: {
     flexDirection: "row",
@@ -144,14 +180,4 @@ const styles = StyleSheet.create({
   searchCount: { fontFamily: fontFamily.medium, fontSize: 11, color: colors.textFaint },
   error: { ...typography.body, color: colors.danger },
   catalogList: { gap: 7 },
-  overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(11,11,13,0.75)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
 });
