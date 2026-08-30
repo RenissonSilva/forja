@@ -1,3 +1,4 @@
+import { Button } from "@presentation/components/ui/Button";
 import { Card } from "@presentation/components/ui/Card";
 import { Icon } from "@presentation/components/ui/Icon";
 import { BmiGauge } from "@presentation/components/features/BmiGauge";
@@ -12,7 +13,7 @@ import {
 } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
 import { fontFamily, typography } from "@presentation/theme/typography";
-import React from "react";
+import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -20,6 +21,10 @@ export default function ImcScreen() {
   const { profile, update } = useProfile();
   const { points, refresh: refreshBmi } = useBmiHistory(profile?.id);
   const { registerWeight } = useWeightHistory(profile?.id);
+  const [draftHeight, setDraftHeight] = useState<number | null>(null);
+  const [draftWeight, setDraftWeight] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasSaved, setHasSaved] = useState(false);
 
   if (!profile) return null;
 
@@ -30,20 +35,30 @@ export default function ImcScreen() {
   const currentWeight = latest?.weightKg ?? 0;
   const bmiDelta = latest && first ? latest.bmi - first.bmi : 0;
 
-  async function handleHeightChange(newHeight: number) {
-    await update({ heightCm: newHeight });
-    await refreshBmi();
-  }
+  const displayedHeight = draftHeight ?? profile.heightCm;
+  const displayedWeight = draftWeight ?? currentWeight;
+  const isDirty = draftHeight !== null || draftWeight !== null;
+  const showProgressChart = hasSaved || points.length > 1;
 
-  async function handleWeightChange(newWeight: number) {
-    await registerWeight(newWeight);
-    await refreshBmi();
+  async function handleSave() {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      if (draftHeight !== null) await update({ heightCm: draftHeight });
+      if (draftWeight !== null) await registerWeight(draftWeight);
+      await refreshBmi();
+      setDraftHeight(null);
+      setDraftWeight(null);
+      setHasSaved(true);
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <Text style={styles.title}>IMC + medidas</Text>
+        <Text style={styles.title}>IMC</Text>
 
         <Card style={styles.imcCard}>
           <View style={styles.imcTopRow}>
@@ -86,28 +101,36 @@ export default function ImcScreen() {
         <View style={styles.row}>
           <MeasureCard
             label="Altura"
-            value={profile.heightCm}
+            value={displayedHeight}
             unit="cm"
             step={1}
             min={100}
             max={250}
-            onChange={handleHeightChange}
+            onChange={setDraftHeight}
           />
           <MeasureCard
             label="Peso"
-            value={currentWeight}
+            value={displayedWeight}
             unit="kg"
             step={0.1}
             min={20}
             max={400}
-            onChange={handleWeightChange}
+            onChange={setDraftWeight}
           />
         </View>
 
-        <Card style={styles.progressCard}>
-          <WeightImcChart points={points} />
-        </Card>
+        {showProgressChart ? (
+          <Card style={styles.progressCard}>
+            <WeightImcChart points={points} />
+          </Card>
+        ) : null}
       </ScrollView>
+
+      {isDirty ? (
+        <View style={styles.saveFooter}>
+          <Button label="Salvar" onPress={handleSave} loading={isSaving} />
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -164,6 +187,12 @@ function round(value: number): number {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: spacing.xxl, paddingBottom: 130, gap: spacing.md },
+  saveFooter: {
+    position: "absolute",
+    left: spacing.xxl,
+    right: spacing.xxl,
+    bottom: 106,
+  },
   title: { ...typography.screenTitle, color: colors.textPrimary, marginBottom: 6 },
   imcCard: { gap: 18, padding: 20 },
   imcTopRow: { flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between" },

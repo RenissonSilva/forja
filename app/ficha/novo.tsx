@@ -20,10 +20,21 @@ interface ExerciseConfig {
   sets: number;
   reps: number;
   loadKg: number;
-  seatAdjustment: string | null;
+  seatHeight: number | null;
+  seatDistance: number | null;
+  seatIncline: number | null;
+  seatLock: number | null;
 }
 
-const DEFAULT_CONFIG: ExerciseConfig = { sets: 3, reps: 10, loadKg: 0, seatAdjustment: null };
+const DEFAULT_CONFIG: ExerciseConfig = {
+  sets: 3,
+  reps: 10,
+  loadKg: 0,
+  seatHeight: null,
+  seatDistance: null,
+  seatIncline: null,
+  seatLock: null,
+};
 const TOTAL_STEPS = 2;
 
 export default function NovoTreinoScreen() {
@@ -99,7 +110,10 @@ export default function NovoTreinoScreen() {
           sets: config.sets,
           reps: config.reps,
           loadKg: config.loadKg,
-          seatAdjustment: config.seatAdjustment,
+          seatHeight: config.seatHeight,
+          seatDistance: config.seatDistance,
+          seatIncline: config.seatIncline,
+          seatLock: config.seatLock,
         });
       }
       router.back();
@@ -145,11 +159,7 @@ export default function NovoTreinoScreen() {
               autoFocus
             />
 
-            <Text style={styles.hint}>
-              {selectedExerciseIds.length > 0
-                ? `${selectedExerciseIds.length} exercício${selectedExerciseIds.length > 1 ? "s" : ""} selecionado${selectedExerciseIds.length > 1 ? "s" : ""}`
-                : "Escolha ao menos um exercício para continuar."}
-            </Text>
+            <MuscleGroupFilter value={muscleGroupFilter} onChange={setMuscleGroupFilter} />
 
             <View style={styles.searchRow}>
               <Icon name="search" size={16} color={colors.textMuted} strokeWidth={2} />
@@ -165,7 +175,6 @@ export default function NovoTreinoScreen() {
               </Text>
             </View>
 
-            <MuscleGroupFilter value={muscleGroupFilter} onChange={setMuscleGroupFilter} />
 
             <View style={styles.catalogList}>
               {searchResults.map((exercise) => (
@@ -181,7 +190,7 @@ export default function NovoTreinoScreen() {
         ) : (
           <>
             <Text style={styles.hint}>
-              Defina séries, repetições, peso e ajustes de cadeira para cada exercício antes de
+              Defina séries, repetições, peso e regulagens para cada exercício antes de
               salvar o treino.
             </Text>
 
@@ -203,9 +212,14 @@ export default function NovoTreinoScreen() {
                     onChangeSets={(value) => updateConfig(exerciseId, { sets: value })}
                     onChangeReps={(value) => updateConfig(exerciseId, { reps: value })}
                     onChangeLoad={(value) => updateConfig(exerciseId, { loadKg: value })}
-                    onChangeSeatAdjustment={(value) =>
-                      updateConfig(exerciseId, { seatAdjustment: value })
+                    onChangeSeatHeight={(value) => updateConfig(exerciseId, { seatHeight: value })}
+                    onChangeSeatDistance={(value) =>
+                      updateConfig(exerciseId, { seatDistance: value })
                     }
+                    onChangeSeatIncline={(value) =>
+                      updateConfig(exerciseId, { seatIncline: value })
+                    }
+                    onChangeSeatLock={(value) => updateConfig(exerciseId, { seatLock: value })}
                     onRemove={() => removeExercise(exerciseId)}
                   />
                 );
@@ -276,6 +290,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semiBold,
     fontSize: 16,
     color: colors.textPrimary,
+    marginBottom: spacing.lg
   },
   hint: { ...typography.body, color: colors.textSecondary },
   searchRow: {
@@ -288,6 +303,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: 14,
+    marginBottom: spacing.lg,
   },
   searchInput: {
     flex: 1,

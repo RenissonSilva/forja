@@ -15,6 +15,13 @@
       "when": 1788129694861,
       "tag": "0001_mature_robbie_robertson",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788203026000,
+      "tag": "0002_regulagens",
+      "breakpoints": true
     }
   ]
 }

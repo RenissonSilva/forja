@@ -12,6 +12,24 @@ import React, { useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+interface SeatAdjustments {
+  seatHeight: number | null;
+  seatDistance: number | null;
+  seatIncline: number | null;
+  seatLock: number | null;
+}
+
+function formatSeatAdjustments(planExercise: SeatAdjustments): string {
+  const parts = [
+    planExercise.seatHeight !== null ? `altura ${planExercise.seatHeight}` : null,
+    planExercise.seatDistance !== null ? `distância ${planExercise.seatDistance}` : null,
+    planExercise.seatIncline !== null ? `inclinação ${planExercise.seatIncline}` : null,
+    planExercise.seatLock !== null ? `trava ${planExercise.seatLock}` : null,
+  ].filter((part): part is string => part !== null);
+
+  return parts.length > 0 ? ` · ${parts.join(" · ")}` : "";
+}
+
 export default function SessaoTreinoScreen() {
   const { fichaId } = useLocalSearchParams<{ fichaId: string }>();
   const { plan } = useWorkoutPlan(fichaId);
@@ -94,9 +112,7 @@ export default function SessaoTreinoScreen() {
                   </Text>
                   <Text style={styles.exerciseMeta}>
                     {planExercise.sets} séries · {planExercise.reps} reps · {planExercise.loadKg} kg
-                    {planExercise.seatAdjustment
-                      ? ` · cadeira: ${planExercise.seatAdjustment}`
-                      : ""}
+                    {formatSeatAdjustments(planExercise)}
                   </Text>
                 </View>
               </Pressable>

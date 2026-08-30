@@ -44,7 +44,10 @@ export const workoutPlanExercises = sqliteTable("workout_plan_exercises", {
   sets: integer("sets").notNull(),
   reps: integer("reps").notNull(),
   loadKg: real("load_kg").notNull(),
-  seatAdjustment: text("seat_adjustment"),
+  seatHeight: real("seat_height"),
+  seatDistance: real("seat_distance"),
+  seatIncline: real("seat_incline"),
+  seatLock: real("seat_lock"),
 });
 
 export const attendances = sqliteTable(

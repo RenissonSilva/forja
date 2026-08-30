@@ -28,8 +28,11 @@ export class UpdateWorkoutPlanExerciseUseCase {
       sets: input.sets ?? currentProps.sets,
       reps: input.reps ?? currentProps.reps,
       loadKg: input.loadKg ?? currentProps.loadKg,
-      seatAdjustment:
-        input.seatAdjustment !== undefined ? input.seatAdjustment : currentProps.seatAdjustment,
+      seatHeight: input.seatHeight !== undefined ? input.seatHeight : currentProps.seatHeight,
+      seatDistance:
+        input.seatDistance !== undefined ? input.seatDistance : currentProps.seatDistance,
+      seatIncline: input.seatIncline !== undefined ? input.seatIncline : currentProps.seatIncline,
+      seatLock: input.seatLock !== undefined ? input.seatLock : currentProps.seatLock,
     });
     if (!updatedResult.ok) throw updatedResult.error;
 

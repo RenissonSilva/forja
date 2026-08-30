@@ -24,6 +24,7 @@ export default function TabsLayout() {
           borderWidth: 1,
           borderColor: colors.border,
           elevation: 0,
+          marginHorizontal: 20
         },
         tabBarItemStyle: { paddingTop: 5 },
       }}
@@ -62,7 +63,7 @@ function TabIcon({ color, name }: { color: ColorValue; name: IconName }) {
 
 function TabLabel({ color, label }: { color: ColorValue; label: string }) {
   return (
-    <Text style={{ fontFamily: fontFamily.semiBold, fontSize: 10, color, marginTop: 5 }}>
+    <Text style={{ fontFamily: fontFamily.semiBold, fontSize: 12, color, marginTop: 2 }}>
       {label}
     </Text>
   );

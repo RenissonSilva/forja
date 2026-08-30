@@ -8,7 +8,10 @@ export interface WorkoutPlanExerciseProps {
   sets: number;
   reps: number;
   loadKg: number;
-  seatAdjustment: string | null;
+  seatHeight: number | null;
+  seatDistance: number | null;
+  seatIncline: number | null;
+  seatLock: number | null;
 }
 
 export type WorkoutPlanExerciseValidationError =
@@ -30,8 +33,7 @@ export class WorkoutPlanExercise {
       return err(new InvalidLoadError(props.loadKg));
     }
 
-    const seatAdjustment = props.seatAdjustment?.trim() || null;
-    return ok(new WorkoutPlanExercise({ ...props, seatAdjustment }));
+    return ok(new WorkoutPlanExercise({ ...props }));
   }
 
   static restore(props: WorkoutPlanExerciseProps): WorkoutPlanExercise {
@@ -66,8 +68,20 @@ export class WorkoutPlanExercise {
     return this.props.loadKg;
   }
 
-  get seatAdjustment(): string | null {
-    return this.props.seatAdjustment;
+  get seatHeight(): number | null {
+    return this.props.seatHeight;
+  }
+
+  get seatDistance(): number | null {
+    return this.props.seatDistance;
+  }
+
+  get seatIncline(): number | null {
+    return this.props.seatIncline;
+  }
+
+  get seatLock(): number | null {
+    return this.props.seatLock;
   }
 
   toProps(): WorkoutPlanExerciseProps {

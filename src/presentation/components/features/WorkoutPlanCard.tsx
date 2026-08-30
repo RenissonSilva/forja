@@ -37,11 +37,6 @@ export function WorkoutPlanCard({
           <Text style={styles.name} numberOfLines={2}>
             {plan.name}
           </Text>
-          {plan.isMarkedToday ? (
-            <View style={styles.badge}>
-              <Text style={styles.badgeLabel}>HOJE</Text>
-            </View>
-          ) : null}
           {isLastCompleted ? (
             <View style={styles.lastCompletedBadge}>
               <Text style={styles.lastCompletedBadgeLabel}>ÚLTIMO FEITO</Text>
@@ -49,7 +44,7 @@ export function WorkoutPlanCard({
           ) : null}
         </View>
         <Text style={styles.meta}>
-          {plan.exercises.length} exercícios · ~{plan.estimatedDurationMinutes} min
+          {plan.exercises.length} exercícios
         </Text>
       </View>
       <View style={styles.actions}>
@@ -96,12 +91,12 @@ const styles = StyleSheet.create({
   accentBar: { width: 4, height: 40, borderRadius: 2 },
   content: { flex: 1, gap: 3 },
   titleRow: { flexDirection: "row", alignItems: "center", gap: 8 },
-  name: { fontFamily: fontFamily.semiBold, fontSize: 15, color: colors.textPrimary, flexShrink: 1 },
+  name: { fontFamily: fontFamily.semiBold, fontSize: 15, color: colors.textPrimary, flex: 1 },
   badge: {
     backgroundColor: colors.primary,
     borderRadius: 5,
     paddingVertical: 3,
-    paddingHorizontal: 7,
+    paddingHorizontal: 7
   },
   badgeLabel: {
     fontFamily: fontFamily.semiBold,
@@ -124,7 +119,7 @@ const styles = StyleSheet.create({
     color: colors.success,
   },
   meta: { fontFamily: fontFamily.light, fontSize: 12, color: colors.textMuted },
-  actions: { flexDirection: "row", gap: 8 },
+  actions: { flexDirection: "row", alignItems: "center", gap: 8 },
   iconButton: {
     width: 36,
     height: 36,

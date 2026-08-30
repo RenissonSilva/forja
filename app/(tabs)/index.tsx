@@ -1,5 +1,4 @@
 import { Avatar } from "@presentation/components/ui/Avatar";
-import { Button } from "@presentation/components/ui/Button";
 import { Card } from "@presentation/components/ui/Card";
 import { Icon } from "@presentation/components/ui/Icon";
 import { TodayWorkoutHero } from "@presentation/components/features/TodayWorkoutHero";
@@ -15,7 +14,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { router } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function HomeScreen() {
@@ -70,9 +69,19 @@ export default function HomeScreen() {
           </Card>
         ) : null}
 
-        <View style={styles.listHeader}>
-          <Text style={styles.listTitle}>Meus treinos</Text>
-          <Text style={styles.listHint}>Toque na estrela para marcar o treino da vez</Text>
+        <View style={styles.listHeaderRow}>
+          <View style={styles.listHeader}>
+            <Text style={styles.listTitle}>Meus treinos</Text>
+            <Text style={styles.listHint}>Toque na estrela para marcar o treino da vez</Text>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Criar novo treino"
+            onPress={() => router.push("/ficha/novo")}
+            style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}
+          >
+            <Icon name="plus" size={16} color={colors.primary} strokeWidth={3} />
+          </Pressable>
         </View>
 
         <View style={styles.list}>
@@ -86,12 +95,6 @@ export default function HomeScreen() {
               onStart={() => startSession(plan)}
             />
           ))}
-          <Button
-            variant="dashed"
-            icon={<Icon name="plus" size={15} color={colors.primary} strokeWidth={2.4} />}
-            label="Criar novo treino"
-            onPress={() => router.push("/ficha/novo")}
-          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -127,7 +130,21 @@ const styles = StyleSheet.create({
   weekCount: { fontFamily: fontFamily.semiBold, fontSize: 11.5, color: colors.primary },
   emptyToday: { ...typography.body, color: colors.textSecondary, textAlign: "center" },
   listHeader: { gap: 2 },
+  listHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   listTitle: { ...typography.heading, color: colors.textPrimary },
   listHint: { fontFamily: fontFamily.light, fontSize: 11.5, color: colors.textFaint },
+  addButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.primaryMutedStrong,
+  },
+  addButtonPressed: { opacity: 0.7 },
   list: { gap: 10 },
 });

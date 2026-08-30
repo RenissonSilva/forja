@@ -8,14 +8,20 @@ interface AddExerciseInput {
   sets: number;
   reps: number;
   loadKg: number;
-  seatAdjustment?: string | null;
+  seatHeight?: number | null;
+  seatDistance?: number | null;
+  seatIncline?: number | null;
+  seatLock?: number | null;
 }
 
 interface UpdateExerciseInput {
   sets?: number;
   reps?: number;
   loadKg?: number;
-  seatAdjustment?: string | null;
+  seatHeight?: number | null;
+  seatDistance?: number | null;
+  seatIncline?: number | null;
+  seatLock?: number | null;
 }
 
 export function useWorkoutPlan(workoutPlanId: string | undefined) {

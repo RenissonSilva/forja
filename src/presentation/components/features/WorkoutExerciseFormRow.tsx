@@ -15,8 +15,18 @@ interface WorkoutExerciseFormRowProps {
   onChangeSets: (value: number) => void;
   onChangeReps: (value: number) => void;
   onChangeLoad: (value: number) => void;
-  onChangeSeatAdjustment: (value: string) => void;
+  onChangeSeatHeight: (value: number | null) => void;
+  onChangeSeatDistance: (value: number | null) => void;
+  onChangeSeatIncline: (value: number | null) => void;
+  onChangeSeatLock: (value: number | null) => void;
   onRemove: () => void;
+}
+
+function parseSeatValue(text: string): number | null {
+  const normalized = text.trim().replace(",", ".");
+  if (normalized === "") return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 export function WorkoutExerciseFormRow({
@@ -26,7 +36,10 @@ export function WorkoutExerciseFormRow({
   onChangeSets,
   onChangeReps,
   onChangeLoad,
-  onChangeSeatAdjustment,
+  onChangeSeatHeight,
+  onChangeSeatDistance,
+  onChangeSeatIncline,
+  onChangeSeatLock,
   onRemove,
 }: WorkoutExerciseFormRowProps) {
   return (
@@ -72,15 +85,54 @@ export function WorkoutExerciseFormRow({
 
       <View style={styles.seatSection}>
         <Text style={styles.seatLabel}>
-          AJUSTES DA CADEIRA <Text style={styles.seatLabelOptional}>(opcional)</Text>
+          REGULAGENS <Text style={styles.seatLabelOptional}>(opcional)</Text>
         </Text>
-        <TextInput
-          value={planExercise.seatAdjustment ?? ""}
-          onChangeText={onChangeSeatAdjustment}
-          placeholder="nenhum"
-          placeholderTextColor={colors.textFaint}
-          style={styles.seatInput}
-        />
+        <View style={styles.seatGrid}>
+          <View style={styles.seatField}>
+            <Text style={styles.seatFieldLabel}>ALTURA</Text>
+            <TextInput
+              value={planExercise.seatHeight?.toString() ?? ""}
+              onChangeText={(text) => onChangeSeatHeight(parseSeatValue(text))}
+              placeholder="-"
+              placeholderTextColor={colors.textFaint}
+              keyboardType="numeric"
+              style={styles.seatInput}
+            />
+          </View>
+          <View style={styles.seatField}>
+            <Text style={styles.seatFieldLabel}>DISTÂNCIA</Text>
+            <TextInput
+              value={planExercise.seatDistance?.toString() ?? ""}
+              onChangeText={(text) => onChangeSeatDistance(parseSeatValue(text))}
+              placeholder="-"
+              placeholderTextColor={colors.textFaint}
+              keyboardType="numeric"
+              style={styles.seatInput}
+            />
+          </View>
+          <View style={styles.seatField}>
+            <Text style={styles.seatFieldLabel}>INCLINAÇÃO</Text>
+            <TextInput
+              value={planExercise.seatIncline?.toString() ?? ""}
+              onChangeText={(text) => onChangeSeatIncline(parseSeatValue(text))}
+              placeholder="-"
+              placeholderTextColor={colors.textFaint}
+              keyboardType="numeric"
+              style={styles.seatInput}
+            />
+          </View>
+          <View style={styles.seatField}>
+            <Text style={styles.seatFieldLabel}>TRAVA</Text>
+            <TextInput
+              value={planExercise.seatLock?.toString() ?? ""}
+              onChangeText={(text) => onChangeSeatLock(parseSeatValue(text))}
+              placeholder="-"
+              placeholderTextColor={colors.textFaint}
+              keyboardType="numeric"
+              style={styles.seatInput}
+            />
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -130,6 +182,14 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   seatLabelOptional: { opacity: 0.6 },
+  seatGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  seatField: { flexBasis: "47%", flexGrow: 1, gap: 6 },
+  seatFieldLabel: {
+    fontFamily: fontFamily.regular,
+    fontSize: 9.5,
+    letterSpacing: 0.3,
+    color: colors.textFaint,
+  },
   seatInput: {
     backgroundColor: colors.surfaceDeep,
     borderRadius: 11,

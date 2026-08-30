@@ -28,7 +28,10 @@ export class AddExerciseToPlanUseCase {
       sets: input.sets,
       reps: input.reps,
       loadKg: input.loadKg,
-      seatAdjustment: input.seatAdjustment ?? null,
+      seatHeight: input.seatHeight ?? null,
+      seatDistance: input.seatDistance ?? null,
+      seatIncline: input.seatIncline ?? null,
+      seatLock: input.seatLock ?? null,
     });
     if (!planExerciseResult.ok) throw planExerciseResult.error;
 

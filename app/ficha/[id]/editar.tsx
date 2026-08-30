@@ -48,7 +48,7 @@ export default function EditarFichaScreen() {
 
   if (!plan) return null;
 
-  async function handleNameBlur() {
+  async function saveName() {
     if (!plan || nameDraft.trim().length === 0 || nameDraft === plan.name) return;
     try {
       await rename(nameDraft);
@@ -56,6 +56,20 @@ export default function EditarFichaScreen() {
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Não foi possível atualizar o treino.");
     }
+  }
+
+  async function handleBack() {
+    if (mode === "catalog") {
+      setMode("config");
+      return;
+    }
+    await saveName();
+    router.back();
+  }
+
+  async function handleSave() {
+    await saveName();
+    router.back();
   }
 
   function toggleExercise(exerciseId: string) {
@@ -101,7 +115,7 @@ export default function EditarFichaScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Voltar"
-            onPress={() => (mode === "catalog" ? setMode("config") : router.back())}
+            onPress={handleBack}
             style={styles.backButton}
           >
             <Icon name="chevron-left" size={15} color={colors.textPrimary} strokeWidth={2.2} />
@@ -124,7 +138,7 @@ export default function EditarFichaScreen() {
             <TextInput
               value={nameDraft}
               onChangeText={setNameDraft}
-              onBlur={handleNameBlur}
+              onBlur={saveName}
               placeholder="Nome do treino"
               placeholderTextColor={colors.textMuted}
               style={styles.nameInput}
@@ -152,8 +166,17 @@ export default function EditarFichaScreen() {
                   onChangeSets={(value) => updateExercise(planExercise.id, { sets: value })}
                   onChangeReps={(value) => updateExercise(planExercise.id, { reps: value })}
                   onChangeLoad={(value) => updateExercise(planExercise.id, { loadKg: value })}
-                  onChangeSeatAdjustment={(value) =>
-                    updateExercise(planExercise.id, { seatAdjustment: value })
+                  onChangeSeatHeight={(value) =>
+                    updateExercise(planExercise.id, { seatHeight: value })
+                  }
+                  onChangeSeatDistance={(value) =>
+                    updateExercise(planExercise.id, { seatDistance: value })
+                  }
+                  onChangeSeatIncline={(value) =>
+                    updateExercise(planExercise.id, { seatIncline: value })
+                  }
+                  onChangeSeatLock={(value) =>
+                    updateExercise(planExercise.id, { seatLock: value })
                   }
                   onRemove={() => removeExercise(planExercise.id)}
                 />
@@ -194,9 +217,9 @@ export default function EditarFichaScreen() {
 
       <View style={styles.footer}>
         {mode === "config" ? (
-          <Button label="Salvar" onPress={() => router.back()} />
+          <Button label="Salvar" onPress={handleSave} />
         ) : (
-          <Button label="Concluído" onPress={() => setMode("config")} />
+          <Button label="Continuar" onPress={() => setMode("config")} />
         )}
       </View>
     </SafeAreaView>

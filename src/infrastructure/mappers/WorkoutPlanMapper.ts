@@ -20,7 +20,10 @@ export class WorkoutPlanMapper {
           sets: row.sets,
           reps: row.reps,
           loadKg: row.loadKg,
-          seatAdjustment: row.seatAdjustment,
+          seatHeight: row.seatHeight,
+          seatDistance: row.seatDistance,
+          seatIncline: row.seatIncline,
+          seatLock: row.seatLock,
         }),
       );
 
@@ -61,7 +64,10 @@ export class WorkoutPlanMapper {
         sets: props.sets,
         reps: props.reps,
         loadKg: props.loadKg,
-        seatAdjustment: props.seatAdjustment,
+        seatHeight: props.seatHeight,
+        seatDistance: props.seatDistance,
+        seatIncline: props.seatIncline,
+        seatLock: props.seatLock,
       };
     });
   }

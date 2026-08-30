@@ -11,7 +11,10 @@ function makePlanExercise(id: string) {
     sets: 3,
     reps: 10,
     loadKg: 20,
-    seatAdjustment: null,
+    seatHeight: null,
+    seatDistance: null,
+    seatIncline: null,
+    seatLock: null,
   });
   if (!result.ok) throw new Error("fixture should be valid");
   return result.value;

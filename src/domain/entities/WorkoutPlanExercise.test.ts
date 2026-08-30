@@ -7,7 +7,10 @@ const baseProps = {
   sets: 4,
   reps: 10,
   loadKg: 60,
-  seatAdjustment: null,
+  seatHeight: null,
+  seatDistance: null,
+  seatIncline: null,
+  seatLock: null,
 };
 
 describe("WorkoutPlanExercise.create", () => {
@@ -16,16 +19,21 @@ describe("WorkoutPlanExercise.create", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("normalizes a blank seat adjustment to null", () => {
-    const result = WorkoutPlanExercise.create({ ...baseProps, seatAdjustment: "   " });
+  it("stores the seat adjustment values", () => {
+    const result = WorkoutPlanExercise.create({
+      ...baseProps,
+      seatHeight: 3,
+      seatDistance: 2,
+      seatIncline: 1,
+      seatLock: 4,
+    });
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.value.seatAdjustment).toBeNull();
-  });
-
-  it("trims a real seat adjustment", () => {
-    const result = WorkoutPlanExercise.create({ ...baseProps, seatAdjustment: "  altura 3  " });
-    expect(result.ok).toBe(true);
-    if (result.ok) expect(result.value.seatAdjustment).toBe("altura 3");
+    if (result.ok) {
+      expect(result.value.seatHeight).toBe(3);
+      expect(result.value.seatDistance).toBe(2);
+      expect(result.value.seatIncline).toBe(1);
+      expect(result.value.seatLock).toBe(4);
+    }
   });
 
   it.each([0, 21, 1.5])("rejects an invalid sets count (%s)", (sets) => {
