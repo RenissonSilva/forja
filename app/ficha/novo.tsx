@@ -111,7 +111,11 @@ export default function NovoTreinoScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
@@ -209,7 +213,9 @@ export default function NovoTreinoScreen() {
             </View>
           </>
         )}
+      </ScrollView>
 
+      <View style={styles.footer}>
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         {step === 1 ? (
@@ -222,14 +228,24 @@ export default function NovoTreinoScreen() {
             loading={isSaving}
           />
         )}
-      </ScrollView>
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  scroll: { flex: 1 },
   content: { padding: spacing.xxl, gap: spacing.md },
+  footer: {
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+    gap: spacing.sm,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   backButton: {
     width: 38,

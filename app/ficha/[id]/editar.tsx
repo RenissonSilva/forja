@@ -15,9 +15,12 @@ import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
 
+type EditorMode = "config" | "catalog";
+
 export default function EditarFichaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { plan, addExercise, updateExercise, removeExercise, rename, remove } = useWorkoutPlan(id);
+  const [mode, setMode] = useState<EditorMode>("config");
   const [nameDraft, setNameDraft] = useState("");
   const [syncedPlanId, setSyncedPlanId] = useState<string | undefined>(undefined);
   const [query, setQuery] = useState("");
@@ -37,6 +40,12 @@ export default function EditarFichaScreen() {
     [allExercises],
   );
 
+  const planExerciseByExerciseId = useMemo(
+    () =>
+      new Map((plan?.exercises ?? []).map((planExercise) => [planExercise.exerciseId, planExercise])),
+    [plan],
+  );
+
   if (!plan) return null;
 
   async function handleNameBlur() {
@@ -46,6 +55,15 @@ export default function EditarFichaScreen() {
       toast.success("Treino atualizado");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Não foi possível atualizar o treino.");
+    }
+  }
+
+  function toggleExercise(exerciseId: string) {
+    const existing = planExerciseByExerciseId.get(exerciseId);
+    if (existing) {
+      removeExercise(existing.id);
+    } else {
+      addExercise({ exerciseId, sets: 3, reps: 10, loadKg: 0 });
     }
   }
 
@@ -74,94 +92,129 @@ export default function EditarFichaScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Voltar"
-            onPress={() => router.back()}
+            onPress={() => (mode === "catalog" ? setMode("config") : router.back())}
             style={styles.backButton}
           >
             <Icon name="chevron-left" size={15} color={colors.textPrimary} strokeWidth={2.2} />
           </Pressable>
-          <Text style={styles.title}>Editar treino</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Excluir treino"
-            onPress={handleDelete}
-            style={styles.deleteButton}
-          >
-            <Icon name="trash" size={15} color={colors.danger} strokeWidth={2.2} />
-          </Pressable>
+          <Text style={styles.title}>{mode === "catalog" ? "Alterar exercícios" : "Editar treino"}</Text>
+          {mode === "config" ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Excluir treino"
+              onPress={handleDelete}
+              style={styles.deleteButton}
+            >
+              <Icon name="trash" size={15} color={colors.danger} strokeWidth={2.2} />
+            </Pressable>
+          ) : null}
         </View>
 
-        <TextInput
-          value={nameDraft}
-          onChangeText={setNameDraft}
-          onBlur={handleNameBlur}
-          placeholder="Nome do treino"
-          placeholderTextColor={colors.textMuted}
-          style={styles.nameInput}
-        />
-
-        <View style={styles.searchRow}>
-          <Icon name="search" size={16} color={colors.textMuted} strokeWidth={2} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Buscar exercício"
-            placeholderTextColor={colors.textMuted}
-            style={styles.searchInput}
-          />
-          <Text style={styles.searchCount}>
-            {searchResults.length} de {allExercises.length}
-          </Text>
-        </View>
-
-        <MuscleGroupFilter value={muscleGroupFilter} onChange={setMuscleGroupFilter} />
-
-        <View style={styles.catalogList}>
-          {searchResults.map((exercise) => (
-            <ExerciseCatalogItem
-              key={exercise.id}
-              exercise={exercise}
-              onAdd={() => addExercise({ exerciseId: exercise.id, sets: 3, reps: 10, loadKg: 0 })}
+        {mode === "config" ? (
+          <>
+            <TextInput
+              value={nameDraft}
+              onChangeText={setNameDraft}
+              onBlur={handleNameBlur}
+              placeholder="Nome do treino"
+              placeholderTextColor={colors.textMuted}
+              style={styles.nameInput}
             />
-          ))}
-        </View>
 
-        <View style={styles.exercisesHeader}>
-          <Text style={styles.sectionTitle}>Exercícios do treino</Text>
-          <Text style={styles.sectionCount}>{plan.exercises.length} exercícios</Text>
-        </View>
-
-        <View style={styles.exercisesList}>
-          {plan.exercises.map((planExercise, index) => (
-            <WorkoutExerciseFormRow
-              key={planExercise.id}
-              order={index + 1}
-              exercise={exercisesById.get(planExercise.exerciseId)}
-              planExercise={planExercise}
-              onChangeSets={(value) => updateExercise(planExercise.id, { sets: value })}
-              onChangeReps={(value) => updateExercise(planExercise.id, { reps: value })}
-              onChangeLoad={(value) => updateExercise(planExercise.id, { loadKg: value })}
-              onChangeSeatAdjustment={(value) =>
-                updateExercise(planExercise.id, { seatAdjustment: value })
-              }
-              onRemove={() => removeExercise(planExercise.id)}
+            <Button
+              label="Alterar exercícios"
+              variant="dashed"
+              icon={<Icon name="dumbbell" size={15} color={colors.primary} strokeWidth={2.2} />}
+              onPress={() => setMode("catalog")}
             />
-          ))}
-        </View>
 
-        <Button label="Salvar treino" onPress={() => router.back()} />
+            <View style={styles.exercisesHeader}>
+              <Text style={styles.sectionTitle}>Exercícios do treino</Text>
+              <Text style={styles.sectionCount}>{plan.exercises.length} exercícios</Text>
+            </View>
+
+            <View style={styles.exercisesList}>
+              {plan.exercises.map((planExercise, index) => (
+                <WorkoutExerciseFormRow
+                  key={planExercise.id}
+                  order={index + 1}
+                  exercise={exercisesById.get(planExercise.exerciseId)}
+                  planExercise={planExercise}
+                  onChangeSets={(value) => updateExercise(planExercise.id, { sets: value })}
+                  onChangeReps={(value) => updateExercise(planExercise.id, { reps: value })}
+                  onChangeLoad={(value) => updateExercise(planExercise.id, { loadKg: value })}
+                  onChangeSeatAdjustment={(value) =>
+                    updateExercise(planExercise.id, { seatAdjustment: value })
+                  }
+                  onRemove={() => removeExercise(planExercise.id)}
+                />
+              ))}
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.searchRow}>
+              <Icon name="search" size={16} color={colors.textMuted} strokeWidth={2} />
+              <TextInput
+                value={query}
+                onChangeText={setQuery}
+                placeholder="Buscar exercício"
+                placeholderTextColor={colors.textMuted}
+                style={styles.searchInput}
+              />
+              <Text style={styles.searchCount}>
+                {searchResults.length} de {allExercises.length}
+              </Text>
+            </View>
+
+            <MuscleGroupFilter value={muscleGroupFilter} onChange={setMuscleGroupFilter} />
+
+            <View style={styles.catalogList}>
+              {searchResults.map((exercise) => (
+                <ExerciseCatalogItem
+                  key={exercise.id}
+                  exercise={exercise}
+                  selected={planExerciseByExerciseId.has(exercise.id)}
+                  onAdd={() => toggleExercise(exercise.id)}
+                />
+              ))}
+            </View>
+          </>
+        )}
       </ScrollView>
+
+      <View style={styles.footer}>
+        {mode === "config" ? (
+          <Button label="Salvar" onPress={() => router.back()} />
+        ) : (
+          <Button label="Concluído" onPress={() => setMode("config")} />
+        )}
+      </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  scroll: { flex: 1 },
   content: { padding: spacing.xxl, gap: spacing.md },
+  footer: {
+    paddingHorizontal: spacing.xxl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
   header: { flexDirection: "row", alignItems: "center", gap: spacing.md, marginBottom: 4 },
   backButton: {
     width: 38,
