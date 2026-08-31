@@ -16,6 +16,7 @@ export type IconName =
   | "target"
   | "search"
   | "trash"
+  | "pencil"
   | "x";
 
 interface IconProps {
@@ -181,6 +182,18 @@ export function Icon({
             strokeLinejoin="round"
           />
           <Path d="M10 11v6M14 11v6" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+        </Svg>
+      );
+    case "pencil":
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M15.7 4.8l3.5 3.5L7.5 20 4 20.5l.5-3.5z"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </Svg>
       );
     case "x":

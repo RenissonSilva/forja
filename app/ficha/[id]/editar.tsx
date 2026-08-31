@@ -122,14 +122,24 @@ export default function EditarFichaScreen() {
           </Pressable>
           <Text style={styles.title}>{mode === "catalog" ? "Alterar exercícios" : "Editar treino"}</Text>
           {mode === "config" ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Excluir treino"
-              onPress={handleDelete}
-              style={styles.deleteButton}
-            >
-              <Icon name="trash" size={15} color={colors.danger} strokeWidth={2.2} />
-            </Pressable>
+            <View style={styles.headerActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Alterar exercícios"
+                onPress={() => setMode("catalog")}
+                style={styles.editButton}
+              >
+                <Icon name="pencil" size={15} color={colors.primary} strokeWidth={2.2} />
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Excluir treino"
+                onPress={handleDelete}
+                style={styles.deleteButton}
+              >
+                <Icon name="trash" size={15} color={colors.danger} strokeWidth={2.2} />
+              </Pressable>
+            </View>
           ) : null}
         </View>
 
@@ -142,13 +152,6 @@ export default function EditarFichaScreen() {
               placeholder="Nome do treino"
               placeholderTextColor={colors.textMuted}
               style={styles.nameInput}
-            />
-
-            <Button
-              label="Alterar exercícios"
-              variant="dashed"
-              icon={<Icon name="dumbbell" size={15} color={colors.primary} strokeWidth={2.2} />}
-              onPress={() => setMode("catalog")}
             />
 
             <View style={styles.exercisesHeader}>
@@ -255,6 +258,17 @@ const styles = StyleSheet.create({
     fontSize: 19,
     letterSpacing: -0.5,
     color: colors.textPrimary,
+  },
+  headerActions: { flexDirection: "row", gap: spacing.sm },
+  editButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceSunken,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
   },
   deleteButton: {
     width: 38,
