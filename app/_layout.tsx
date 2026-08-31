@@ -51,6 +51,7 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="ficha/novo" options={{ presentation: "modal" }} />
         <Stack.Screen name="ficha/[id]/editar" options={{ presentation: "modal" }} />
+        <Stack.Screen name="perfil/editar" options={{ presentation: "modal" }} />
         <Stack.Screen
           name="treino/[fichaId]/sessao"
           options={{ presentation: "fullScreenModal" }}

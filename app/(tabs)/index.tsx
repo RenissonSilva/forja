@@ -46,7 +46,13 @@ export default function HomeScreen() {
             </Text>
             <Text style={styles.greeting}>Olá, {firstName(profile.name)}</Text>
           </View>
-          <Avatar name={profile.name} uri={profile.avatarUri} size={42} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Editar perfil"
+            onPress={() => router.push("/perfil/editar")}
+          >
+            <Avatar name={profile.name} uri={profile.avatarUri} size={42} />
+          </Pressable>
         </View>
 
         <Card>
