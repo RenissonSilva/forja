@@ -18,12 +18,15 @@ const validInput = {
   remindersEnabled: true,
 };
 
+const profileId = "auth-user-1";
+
 describe("CreateProfileUseCase", () => {
   it("persists both the profile and an initial weight entry", async () => {
     const { useCase, profileRepository, weightEntryRepository } = makeUseCase();
 
-    const profile = await useCase.execute(validInput);
+    const profile = await useCase.execute(validInput, profileId);
 
+    expect(profile.id).toBe(profileId);
     expect(await profileRepository.findCurrent()).toBe(profile);
     const entries = await weightEntryRepository.findAllByProfile(profile.id);
     expect(entries).toHaveLength(1);
@@ -33,7 +36,7 @@ describe("CreateProfileUseCase", () => {
   it("does not persist anything when the height is invalid", async () => {
     const { useCase, profileRepository, weightEntryRepository } = makeUseCase();
 
-    await expect(useCase.execute({ ...validInput, heightCm: 10 })).rejects.toThrow();
+    await expect(useCase.execute({ ...validInput, heightCm: 10 }, profileId)).rejects.toThrow();
 
     expect(await profileRepository.findCurrent()).toBeNull();
     expect(await weightEntryRepository.findAllByProfile("any")).toHaveLength(0);
@@ -42,6 +45,8 @@ describe("CreateProfileUseCase", () => {
   it("rejects input that fails DTO validation before touching the domain", async () => {
     const { useCase } = makeUseCase();
 
-    await expect(useCase.execute({ ...validInput, weeklyGoalDays: 9 })).rejects.toThrow();
+    await expect(
+      useCase.execute({ ...validInput, weeklyGoalDays: 9 }, profileId),
+    ).rejects.toThrow();
   });
 });

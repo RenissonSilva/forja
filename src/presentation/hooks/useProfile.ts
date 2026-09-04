@@ -3,10 +3,12 @@ import { CreateProfileInput } from "@application/dtos/CreateProfile.dto";
 import { UpdateProfileInput } from "@application/dtos/UpdateProfile.dto";
 import { useAppServices } from "../providers/AppServicesProvider";
 import { useProfileStore } from "../stores/profileStore";
+import { useAuth } from "./useAuth";
 
 export function useProfile() {
   const services = useAppServices();
-  const { profile, isLoading, hasLoaded, setProfile, setLoading } = useProfileStore();
+  const { user } = useAuth();
+  const { profile, isLoading, hasLoaded, setProfile, setLoading, reset } = useProfileStore();
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -15,18 +17,23 @@ export function useProfile() {
   }, [services, setLoading, setProfile]);
 
   useEffect(() => {
+    if (!user) {
+      reset();
+      return;
+    }
     if (!hasLoaded) {
       refresh();
     }
-  }, [hasLoaded, refresh]);
+  }, [user, hasLoaded, refresh, reset]);
 
   const create = useCallback(
     async (input: CreateProfileInput) => {
-      const created = await services.profile.create.execute(input);
+      if (!user) throw new Error("Cannot create a profile without an authenticated user.");
+      const created = await services.profile.create.execute(input, user.id);
       setProfile(created);
       return created;
     },
-    [services, setProfile],
+    [services, user, setProfile],
   );
 
   const update = useCallback(

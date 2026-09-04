@@ -4,7 +4,7 @@ import { colors } from "../../theme/colors";
 import { fontFamily } from "../../theme/typography";
 import { RadialGlow } from "./RadialGlow";
 
-type ButtonVariant = "primary" | "dashed";
+type ButtonVariant = "primary" | "dashed" | "secondary";
 
 interface ButtonProps {
   label: string;
@@ -39,18 +39,11 @@ export function Button({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "primary" ? colors.onPrimary : colors.primary} />
+        <ActivityIndicator color={indicatorColors[variant]} />
       ) : (
         <View style={styles.content}>
           {icon}
-          <Text
-            style={[
-              styles.label,
-              variant === "primary" ? styles.labelOnPrimary : styles.labelDashed,
-            ]}
-          >
-            {label}
-          </Text>
+          <Text style={[styles.label, labelStyles[variant]]}>{label}</Text>
         </View>
       )}
     </Pressable>
@@ -100,9 +93,19 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.5 },
   pressed: { opacity: 0.85 },
   label: { fontFamily: fontFamily.semiBold, fontSize: 15.5 },
-  labelOnPrimary: { color: colors.onPrimary },
-  labelDashed: { color: colors.primary },
 });
+
+const labelStyles = StyleSheet.create({
+  primary: { color: colors.onPrimary },
+  dashed: { color: colors.primary },
+  secondary: { color: colors.textPrimary },
+});
+
+const indicatorColors: Record<ButtonVariant, string> = {
+  primary: colors.onPrimary,
+  dashed: colors.primary,
+  secondary: colors.textPrimary,
+};
 
 const variantStyles = StyleSheet.create({
   primary: {
@@ -118,5 +121,8 @@ const variantStyles = StyleSheet.create({
     borderWidth: 1.5,
     borderStyle: "dashed",
     borderColor: colors.primaryBorder,
+  },
+  secondary: {
+    backgroundColor: colors.control,
   },
 });

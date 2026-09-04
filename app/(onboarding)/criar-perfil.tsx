@@ -2,6 +2,7 @@ import { Button } from "@presentation/components/ui/Button";
 import { Icon } from "@presentation/components/ui/Icon";
 import { TextField } from "@presentation/components/ui/TextField";
 import { Toggle } from "@presentation/components/ui/Toggle";
+import { useAuth } from "@presentation/hooks/useAuth";
 import { useProfile } from "@presentation/hooks/useProfile";
 import { colors } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
@@ -18,6 +19,7 @@ const TOTAL_STEPS = 2;
 
 export default function CreateProfileScreen() {
   const { create } = useProfile();
+  const { signOut } = useAuth();
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
   const [heightCm, setHeightCm] = useState("170");
@@ -50,7 +52,9 @@ export default function CreateProfileScreen() {
       setStep(1);
       return;
     }
-    router.back();
+    // Step 1 is the first screen after login/cadastro — there's nothing to go back to
+    // except signing out, which returns the user to (auth).
+    signOut();
   }
 
   function handleNext() {

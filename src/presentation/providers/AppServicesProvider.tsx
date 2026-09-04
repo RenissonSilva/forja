@@ -1,6 +1,5 @@
 import { AppContainer, buildContainer } from "@composition/container";
-import { db } from "@infrastructure/database/database";
-import { seedExerciseCatalog } from "@infrastructure/database/seed/seedExerciseCatalog";
+import { supabase } from "@infrastructure/supabase/supabaseClient";
 import {
   Sora_300Light,
   Sora_400Regular,
@@ -9,18 +8,16 @@ import {
   Sora_700Bold,
   useFonts,
 } from "@expo-google-fonts/sora";
-import { useMigrations } from "drizzle-orm/expo-sqlite/migrator";
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useAuthStore } from "../stores/authStore";
 import { colors } from "../theme/colors";
 import { spacing } from "../theme/spacing";
 import { typography } from "../theme/typography";
-import migrations from "../../../drizzle/migrations";
 
 const AppServicesContext = createContext<AppContainer | null>(null);
 
 export function AppServicesProvider({ children }: { children: React.ReactNode }) {
-  const { success, error } = useMigrations(db, migrations);
   const [fontsLoaded, fontError] = useFonts({
     Sora_300Light,
     Sora_400Regular,
@@ -28,29 +25,26 @@ export function AppServicesProvider({ children }: { children: React.ReactNode })
     Sora_600SemiBold,
     Sora_700Bold,
   });
-  const [seeded, setSeeded] = useState(false);
-  const [seedError, setSeedError] = useState<Error | null>(null);
+  const setUser = useAuthStore((state) => state.setUser);
+
+  const container = useMemo(() => buildContainer(supabase), []);
 
   useEffect(() => {
-    if (!success) return;
-    seedExerciseCatalog()
-      .then(() => setSeeded(true))
-      .catch((err: unknown) => setSeedError(err instanceof Error ? err : new Error(String(err))));
-  }, [success]);
+    container.auth.getCurrentUser.execute().then(setUser);
+    const unsubscribe = container.auth.onAuthStateChange(setUser);
+    return unsubscribe;
+  }, [container, setUser]);
 
-  const container = useMemo(() => buildContainer(db), []);
-
-  const failure = error ?? seedError ?? fontError;
-  if (failure) {
+  if (fontError) {
     return (
       <View style={styles.center}>
-        <Text style={styles.title}>Não foi possível preparar o banco local</Text>
-        <Text style={styles.message}>{failure.message}</Text>
+        <Text style={styles.title}>Não foi possível preparar o app</Text>
+        <Text style={styles.message}>{fontError.message}</Text>
       </View>
     );
   }
 
-  if (!success || !seeded || !fontsLoaded) {
+  if (!fontsLoaded) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color={colors.primary} size="large" />

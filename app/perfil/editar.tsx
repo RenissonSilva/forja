@@ -1,6 +1,7 @@
 import { Button } from "@presentation/components/ui/Button";
 import { Icon } from "@presentation/components/ui/Icon";
 import { TextField } from "@presentation/components/ui/TextField";
+import { useAuth } from "@presentation/hooks/useAuth";
 import { useProfile } from "@presentation/hooks/useProfile";
 import { colors } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
@@ -15,9 +16,11 @@ import { toast } from "sonner-native";
 
 export default function EditarPerfilScreen() {
   const { profile, update } = useProfile();
+  const { signOut } = useAuth();
   const [name, setName] = useState(profile?.name ?? "");
   const [avatarUri, setAvatarUri] = useState<string | null>(profile?.avatarUri ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!profile) return null;
@@ -56,6 +59,15 @@ export default function EditarPerfilScreen() {
       );
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleSignOut() {
+    setIsSigningOut(true);
+    try {
+      await signOut();
+    } finally {
+      setIsSigningOut(false);
     }
   }
 
@@ -102,6 +114,12 @@ export default function EditarPerfilScreen() {
       <View style={styles.footer}>
         {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
         <Button label="Salvar" onPress={handleSave} loading={isSubmitting} />
+        <Button
+          label="Sair da conta"
+          variant="dashed"
+          onPress={handleSignOut}
+          loading={isSigningOut}
+        />
       </View>
     </SafeAreaView>
   );

@@ -12,12 +12,13 @@ export class CreateProfileUseCase {
     private readonly weightEntryRepository: WeightEntryRepository,
   ) {}
 
-  async execute(rawInput: CreateProfileInput): Promise<Profile> {
+  /** profileId is the authenticated user's id — a profile is always 1:1 with an auth account. */
+  async execute(rawInput: CreateProfileInput, profileId: string): Promise<Profile> {
     const input = createProfileSchema.parse(rawInput);
     const now = new Date();
 
     const profileResult = Profile.create({
-      id: generateId(),
+      id: profileId,
       name: input.name,
       avatarUri: input.avatarUri ?? null,
       heightCm: input.heightCm,

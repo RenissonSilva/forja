@@ -19,23 +19,38 @@ import { GetMonthlyGoalProgressUseCase } from "@application/attendance/GetMonthl
 import { RegisterWeightEntryUseCase } from "@application/progress/RegisterWeightEntry.usecase";
 import { GetWeightHistoryUseCase } from "@application/progress/GetWeightHistory.usecase";
 import { GetBmiHistoryUseCase } from "@application/progress/GetBmiHistory.usecase";
+import { SignUpWithEmailUseCase } from "@application/auth/SignUpWithEmail.usecase";
+import { SignInWithEmailUseCase } from "@application/auth/SignInWithEmail.usecase";
+import { SignInWithGoogleUseCase } from "@application/auth/SignInWithGoogle.usecase";
+import { SignOutUseCase } from "@application/auth/SignOut.usecase";
+import { GetCurrentUserUseCase } from "@application/auth/GetCurrentUser.usecase";
 
-import { Database } from "@infrastructure/database/database";
-import { DrizzleAttendanceRepository } from "@infrastructure/repositories/DrizzleAttendanceRepository";
-import { DrizzleExerciseRepository } from "@infrastructure/repositories/DrizzleExerciseRepository";
-import { DrizzleProfileRepository } from "@infrastructure/repositories/DrizzleProfileRepository";
-import { DrizzleWeightEntryRepository } from "@infrastructure/repositories/DrizzleWeightEntryRepository";
-import { DrizzleWorkoutPlanRepository } from "@infrastructure/repositories/DrizzleWorkoutPlanRepository";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { SupabaseAttendanceRepository } from "@infrastructure/repositories/SupabaseAttendanceRepository";
+import { SupabaseAuthRepository } from "@infrastructure/repositories/SupabaseAuthRepository";
+import { SupabaseExerciseRepository } from "@infrastructure/repositories/SupabaseExerciseRepository";
+import { SupabaseProfileRepository } from "@infrastructure/repositories/SupabaseProfileRepository";
+import { SupabaseWeightEntryRepository } from "@infrastructure/repositories/SupabaseWeightEntryRepository";
+import { SupabaseWorkoutPlanRepository } from "@infrastructure/repositories/SupabaseWorkoutPlanRepository";
 
 /** Composition root: wires repositories (Infrastructure) into use cases (Application). */
-export function buildContainer(db: Database) {
-  const profileRepository = new DrizzleProfileRepository(db);
-  const exerciseRepository = new DrizzleExerciseRepository(db);
-  const workoutPlanRepository = new DrizzleWorkoutPlanRepository(db);
-  const attendanceRepository = new DrizzleAttendanceRepository(db);
-  const weightEntryRepository = new DrizzleWeightEntryRepository(db);
+export function buildContainer(client: SupabaseClient) {
+  const authRepository = new SupabaseAuthRepository();
+  const profileRepository = new SupabaseProfileRepository(client);
+  const exerciseRepository = new SupabaseExerciseRepository(client);
+  const workoutPlanRepository = new SupabaseWorkoutPlanRepository(client);
+  const attendanceRepository = new SupabaseAttendanceRepository(client);
+  const weightEntryRepository = new SupabaseWeightEntryRepository(client);
 
   return {
+    auth: {
+      signUp: new SignUpWithEmailUseCase(authRepository),
+      signIn: new SignInWithEmailUseCase(authRepository),
+      signInWithGoogle: new SignInWithGoogleUseCase(authRepository),
+      signOut: new SignOutUseCase(authRepository),
+      getCurrentUser: new GetCurrentUserUseCase(authRepository),
+      onAuthStateChange: authRepository.onAuthStateChange.bind(authRepository),
+    },
     profile: {
       create: new CreateProfileUseCase(profileRepository, weightEntryRepository),
       update: new UpdateProfileUseCase(profileRepository),

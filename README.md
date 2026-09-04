@@ -1,15 +1,18 @@
 # FORJA
 
-App pessoal de gestão de treino de academia: monte fichas com séries, cargas e ajustes de
-cadeira, marque o treino do dia, acompanhe a semana no calendário e veja o IMC e o peso
-evoluírem em gráfico.
+App de gestão de treino de academia, com conta própria por usuário: monte fichas com séries,
+cargas e ajustes de cadeira, marque o treino do dia, acompanhe a semana no calendário e veja o
+IMC e o peso evoluírem em gráfico.
 
-100% local e offline — todos os dados ficam no SQLite do próprio dispositivo, sem backend.
+Multi-usuário com autenticação (e-mail/senha e Google) via **Supabase** — Postgres gerenciado +
+Auth, com Row Level Security isolando os dados de cada conta. Requer conexão com a internet
+(sem suporte offline).
 
 ## Stack
 
 - **Expo (managed)** + **Expo Router** + **TypeScript** (strict)
-- **Drizzle ORM** sobre **expo-sqlite** (persistência local)
+- **Supabase**: Postgres + Auth (e-mail/senha, Google OAuth) + Row Level Security, acessado via
+  `@supabase/supabase-js`
 - **Zod** (validação de DTOs e de variáveis de ambiente) · **Zustand** (estado leve de UI)
 - **react-native-gifted-charts** (gráfico de peso/IMC) · **react-native-calendars**-style
   calendário mensal construído sobre `date-fns`
@@ -26,39 +29,44 @@ src/
 ├── domain/          entidades, value objects, erros e regras de negócio puras
 │                     (zero dependências de React Native ou de banco)
 ├── application/      use cases (1 por operação) + DTOs (Zod) na borda de entrada
-├── infrastructure/   Drizzle/SQLite: schema, migrations, repositórios, mappers, seed
+├── infrastructure/   client Supabase, repositórios e mappers (linha a linha, snake_case
+│                     do Postgres <-> camelCase do Domain)
 ├── composition/       composition root — monta repositórios (Infrastructure) e injeta
 │                     nos use cases (Application); é a única camada que conhece as duas
 ├── presentation/      tema, componentes, hooks (ligam use cases + telas) e providers
 └── shared/           utilitários puros reaproveitados por qualquer camada (Result, datas, id)
 
 app/                  rotas do Expo Router — finas, delegam para src/presentation
-drizzle/               migrations SQL geradas pelo drizzle-kit (versionadas: são bundladas
-                     no app e aplicadas no dispositivo no primeiro boot)
 ```
 
-Domain e Application não importam nada de React Native/Expo/Drizzle — são testáveis com Jest
-puro, sem mocks de plataforma.
+Domain e Application não importam nada de React Native/Expo/Supabase — são testáveis com Jest
+puro, sem mocks de plataforma (o fake `InMemoryAuthRepository` cobre os use cases de auth nos
+testes).
 
 ## Setup
 
-Pré-requisitos: Node 18+, um dispositivo/emulador com o app **Expo Go** instalado (todas as
-dependências nativas usadas — expo-sqlite, expo-image, expo-image-picker,
-expo-linear-gradient, reanimated, gesture-handler — são compatíveis com Expo Go na versão do
-SDK deste projeto; não é necessário gerar um development build).
+Pré-requisitos: Node 18+, um projeto no [Supabase](https://supabase.com), e um **development
+build** do app (o login com Google via navegador não funciona no Expo Go — use
+`npx expo run:android` / `npx expo run:ios`, ou um build EAS).
+
+1. Crie um projeto no Supabase e rode o SQL de schema + Row Level Security (tabelas `profiles`,
+   `exercises`, `workout_plans`, `workout_plan_exercises`, `attendances`, `weight_entries`) no
+   SQL Editor do painel.
+2. Em Authentication → Providers, habilite Email e Google (o Google exige um OAuth Client ID
+   tipo "Web application" no Google Cloud Console, com redirect URI
+   `https://<PROJECT_REF>.supabase.co/auth/v1/callback`).
+3. Copie a Project URL e a chave anon/publishable (Settings → API) para o `.env`:
 
 ```bash
 npm install
-cp .env.example .env   # ajuste se quiser, os valores padrão já funcionam
-npm start
+cp .env.example .env
+# edite EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY com os valores do seu projeto
+npm run android   # ou: npm run ios
 ```
 
-Escaneie o QR code com o Expo Go (Android) ou a câmera (iOS), ou pressione `a`/`i` no terminal
-para abrir num emulador.
-
-No primeiro boot o app roda as migrations do Drizzle automaticamente e popula o catálogo de
-~28 exercícios pré-cadastrados (ver `src/infrastructure/database/seed/seedExerciseCatalog.ts`).
-Não existe usuário/perfil ainda no primeiro uso — o app abre direto no onboarding.
+O catálogo de exercícios pré-cadastrados é semeado uma única vez direto no banco (via SQL),
+não mais pelo app no boot. No primeiro uso, o app abre no fluxo de autenticação — depois de
+criar conta/entrar, segue para o onboarding de criação de perfil.
 
 ## Scripts
 
@@ -70,7 +78,6 @@ Não existe usuário/perfil ainda no primeiro uso — o app abre direto no onboa
 | `npm run lint`                    | ESLint, incluindo a regra de fronteira de camadas                                       |
 | `npm run format` / `format:check` | Prettier                                                                                |
 | `npm test` / `test:watch`         | Jest                                                                                    |
-| `npm run db:generate`             | Gera uma nova migration a partir de mudanças em `src/infrastructure/database/schema.ts` |
 
 ## Testes
 
@@ -79,8 +86,8 @@ npm test              # roda tudo
 npx jest --coverage   # com relatório de cobertura
 ```
 
-Cobertos com Jest + repositórios fake em memória (`src/application/testing/`), sem tocar
-SQLite:
+Cobertos com Jest + repositórios fake em memória (`src/application/testing/`), sem tocar o
+Supabase:
 
 - **Domain**: value objects (`Height`, `Weight`, `Bmi` — incluindo os limiares de
   classificação abaixo/saudável/sobrepeso/obesidade), `GoalProgressService`, e as entidades
@@ -97,14 +104,21 @@ eles delegam.
 
 ## Decisões e limitações conhecidas
 
-- **Perfil único**: o app foi desenhado para uso pessoal (uma pessoa, um dispositivo). As
-  entidades já carregam `profileId` para não precisar de migração de schema se um dia isso
-  virar multi-usuário — só a camada de Infrastructure mudaria.
+- **Multi-usuário via Supabase**: cada conta tem seu próprio `profile` (1:1 com `auth.users`,
+  mesmo `id`) e Row Level Security isola todas as demais tabelas por `profile_id`/`user_id`. A
+  Infrastructure fala com o Postgres via `supabase-js` (PostgREST sobre HTTPS) — é o caminho
+  correto para RLS baseada em sessão a partir de um client React Native, ao contrário de um ORM
+  como Drizzle com conexão TCP direta, que não roda no runtime do RN.
+- **Sem suporte offline**: o app depende de conexão com a internet; não há cache local nem
+  sincronização.
 - **Sessão de treino**: a tela em `app/treino/[fichaId]/sessao.tsx` (marcar exercícios,
   concluir e registrar presença) foi inferida — não havia mockup para essa tela específica.
 - **Ícones/splash placeholder**: `assets/images/` usa os assets padrão do template Expo. Troque
   pela identidade visual real do FORJA quando tiver os arquivos.
-- **Sem backend**: tudo local. Se um dia for preciso sincronizar entre dispositivos ou lançar
-  publicamente, a Infrastructure já isola Drizzle/SQLite atrás de interfaces de Repository
-  (`src/domain/repositories/`) — trocar para um backend real (ex. Postgres via Drizzle, ou
-  Turso) significa reimplementar essas interfaces, sem tocar em Domain/Application/Presentation.
+- **Tipos do Supabase não gerados**: os mappers em `src/infrastructure/mappers/` tipam as linhas
+  manualmente (interfaces `Supabase*Row`). Rodar `supabase gen types typescript` e apontar o
+  `createClient<Database>` para o resultado é uma melhoria futura opcional.
+- **`WorkoutPlanRepository.save` sem transação**: `supabase-js` não oferece transação
+  client-side multi-tabela, então salvar uma ficha é upsert do plano seguido de delete+insert
+  dos exercícios (duas chamadas). Se aparecer inconsistência em uso real, migrar para uma RPC
+  Postgres (`client.rpc(...)`) resolveria com atomicidade real.

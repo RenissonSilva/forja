@@ -5,13 +5,15 @@ import { z } from "zod";
 // (no dynamic lookups) for the inlining to work.
 const envSchema = z.object({
   APP_ENV: z.enum(["development", "production"]).default("development"),
-  DB_NAME: z.string().min(1).default("forja.db"),
+  SUPABASE_URL: z.string().url(),
+  SUPABASE_ANON_KEY: z.string().min(1),
 });
 
 function loadEnv() {
   const parsed = envSchema.safeParse({
     APP_ENV: process.env.EXPO_PUBLIC_APP_ENV,
-    DB_NAME: process.env.EXPO_PUBLIC_DB_NAME,
+    SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
+    SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
   });
 
   if (!parsed.success) {

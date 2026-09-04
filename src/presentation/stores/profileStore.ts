@@ -7,6 +7,7 @@ interface ProfileState {
   hasLoaded: boolean;
   setProfile: (profile: Profile | null) => void;
   setLoading: (isLoading: boolean) => void;
+  reset: () => void;
 }
 
 /** Shared across the app: the onboarding gate in app/_layout.tsx and every
@@ -17,4 +18,5 @@ export const useProfileStore = create<ProfileState>((set) => ({
   hasLoaded: false,
   setProfile: (profile) => set({ profile, isLoading: false, hasLoaded: true }),
   setLoading: (isLoading) => set({ isLoading }),
+  reset: () => set({ profile: null, isLoading: true, hasLoaded: false }),
 }));

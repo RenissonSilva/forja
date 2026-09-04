@@ -1,5 +1,6 @@
 import { colors } from "@presentation/theme/colors";
 import { fontFamily } from "@presentation/theme/typography";
+import { useAuth } from "@presentation/hooks/useAuth";
 import { useProfile } from "@presentation/hooks/useProfile";
 import { AppServicesProvider } from "@presentation/providers/AppServicesProvider";
 import { StatusBar } from "expo-status-bar";
@@ -32,9 +33,10 @@ export default function RootLayout() {
 }
 
 function RootNavigator() {
-  const { profile, isLoading } = useProfile();
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const { profile, isLoading: isProfileLoading } = useProfile();
 
-  if (isLoading) {
+  if (isAuthLoading || (user && isProfileLoading)) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={colors.primary} size="large" />
@@ -44,10 +46,13 @@ function RootNavigator() {
 
   return (
     <Stack screenOptions={{ headerShown: false, contentStyle: styles.screenContent }}>
-      <Stack.Protected guard={!profile}>
+      <Stack.Protected guard={!user}>
+        <Stack.Screen name="(auth)" />
+      </Stack.Protected>
+      <Stack.Protected guard={Boolean(user) && !profile}>
         <Stack.Screen name="(onboarding)" />
       </Stack.Protected>
-      <Stack.Protected guard={Boolean(profile)}>
+      <Stack.Protected guard={Boolean(user) && Boolean(profile)}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="ficha/novo" options={{ presentation: "modal" }} />
         <Stack.Screen name="ficha/[id]/editar" options={{ presentation: "modal" }} />
