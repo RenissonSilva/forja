@@ -12,6 +12,7 @@ export type IconName =
   | "play"
   | "clock"
   | "star"
+  | "flag"
   | "check"
   | "target"
   | "search"
@@ -141,6 +142,19 @@ export function Icon({
             fill={filled ? color : "none"}
             stroke={color}
             strokeWidth={1.8}
+            strokeLinejoin="round"
+          />
+        </Svg>
+      );
+    case "flag":
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <Path d="M6 21V4" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+          <Path
+            d="M6 5l12 3.5L6 12V5z"
+            fill={filled ? color : "none"}
+            stroke={color}
+            strokeWidth={strokeWidth}
             strokeLinejoin="round"
           />
         </Svg>

@@ -20,7 +20,7 @@ export function TodayWorkoutHero({ plan, onStart }: TodayWorkoutHeroProps) {
       style={styles.card}
     >
       <View style={styles.decorCircle} />
-      <Text style={styles.label}>TREINO DA VEZ</Text>
+      <Text style={styles.label}>PRÓXIMO TREINO</Text>
       <Text style={styles.name} numberOfLines={2}>
         {plan.name.replace(" — ", " · ")}
       </Text>
@@ -32,9 +32,6 @@ export function TodayWorkoutHero({ plan, onStart }: TodayWorkoutHeroProps) {
           <Icon name="play" size={13} color={colors.primary} />
           <Text style={styles.startLabel}>Iniciar treino</Text>
         </Pressable>
-        <View style={styles.clockButton}>
-          <Icon name="clock" size={16} color={colors.onPrimary} strokeWidth={2} />
-        </View>
       </View>
     </LinearGradient>
   );

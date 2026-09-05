@@ -114,12 +114,16 @@ export default function EditarPerfilScreen() {
       <View style={styles.footer}>
         {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
         <Button label="Salvar" onPress={handleSave} loading={isSubmitting} />
-        <Button
-          label="Sair da conta"
-          variant="dashed"
+        <Pressable
+          accessibilityRole="button"
           onPress={handleSignOut}
-          loading={isSigningOut}
-        />
+          disabled={isSigningOut}
+          style={styles.signOutLink}
+        >
+          <Text style={styles.signOutLinkText}>
+            {isSigningOut ? "Saindo..." : "Sair da conta"}
+          </Text>
+        </Pressable>
       </View>
     </SafeAreaView>
   );
@@ -136,7 +140,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.border
   },
   header: { flexDirection: "row", alignItems: "center", gap: spacing.md },
   backButton: {
@@ -185,4 +189,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   error: { ...typography.caption, color: colors.danger },
+  signOutLink: { alignItems: "center", marginTop: spacing.xs },
+  signOutLinkText: { fontFamily: fontFamily.medium, fontSize: 13.5, color: colors.textSecondary },
 });

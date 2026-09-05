@@ -70,7 +70,7 @@ export default function HomeScreen() {
         ) : plans.length > 0 ? (
           <Card>
             <Text style={styles.emptyToday}>
-              Toque na ★ de uma ficha abaixo para marcá-la como o treino da vez.
+              Toque no alvo para marcá-la como o próximo treino.
             </Text>
           </Card>
         ) : null}
@@ -78,7 +78,7 @@ export default function HomeScreen() {
         <View style={styles.listHeaderRow}>
           <View style={styles.listHeader}>
             <Text style={styles.listTitle}>Meus treinos</Text>
-            <Text style={styles.listHint}>Toque na estrela para marcar o treino da vez</Text>
+            <Text style={styles.listHint}>Toque no alvo para marcar o próximo treino</Text>
           </View>
           <Pressable
             accessibilityRole="button"

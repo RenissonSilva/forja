@@ -51,13 +51,13 @@ export function WorkoutPlanCard({
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={
-            plan.isMarkedToday ? "Desmarcar como treino da vez" : "Marcar como treino da vez"
+            plan.isMarkedToday ? "Desmarcar como próximo treino" : "Marcar como próximo treino"
           }
           onPress={onToggleToday}
           style={[styles.iconButton, plan.isMarkedToday && styles.iconButtonActive]}
         >
           <Icon
-            name="star"
+            name="target"
             size={16}
             filled={plan.isMarkedToday}
             color={plan.isMarkedToday ? colors.primary : colors.textMuted}
