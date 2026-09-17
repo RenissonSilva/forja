@@ -34,6 +34,17 @@ export class SupabaseAttendanceRepository implements AttendanceRepository {
     return (data ?? []).map(SupabaseAttendanceMapper.toDomain);
   }
 
+  async findAllByProfile(profileId: string): Promise<Attendance[]> {
+    const { data, error } = await this.client
+      .from("attendances")
+      .select("*")
+      .eq("profile_id", profileId)
+      .order("date", { ascending: true })
+      .returns<SupabaseAttendanceRow[]>();
+    if (error) throw error;
+    return (data ?? []).map(SupabaseAttendanceMapper.toDomain);
+  }
+
   async save(attendance: Attendance): Promise<void> {
     const row = SupabaseAttendanceMapper.toRow(attendance);
     const { error } = await this.client

@@ -15,6 +15,12 @@ export class InMemoryAttendanceRepository implements AttendanceRepository {
       .sort((a, b) => a.date.localeCompare(b.date));
   }
 
+  async findAllByProfile(profileId: string): Promise<Attendance[]> {
+    return [...this.items.values()]
+      .filter((a) => a.profileId === profileId)
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
   async save(attendance: Attendance): Promise<void> {
     this.items.set(this.key(attendance.profileId, attendance.date), attendance);
   }

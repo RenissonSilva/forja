@@ -2,7 +2,9 @@ import { Card } from "@presentation/components/ui/Card";
 import { Icon } from "@presentation/components/ui/Icon";
 import { ProgressBar } from "@presentation/components/ui/ProgressBar";
 import { MonthCalendar } from "@presentation/components/features/MonthCalendar";
+import { MuscleGroupStatsChart } from "@presentation/components/features/MuscleGroupStatsChart";
 import { useMonthlyOverview } from "@presentation/hooks/useMonthlyOverview";
+import { useMuscleGroupStats } from "@presentation/hooks/useMuscleGroupStats";
 import { useProfile } from "@presentation/hooks/useProfile";
 import { colors } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
@@ -17,6 +19,7 @@ export default function HistoricoScreen() {
   const { profile } = useProfile();
   const { referenceDate, days, goalProgress, goToPreviousMonth, goToNextMonth } =
     useMonthlyOverview(profile?.id);
+  const { stats: muscleGroupStats } = useMuscleGroupStats(profile?.id);
 
   if (!profile) return null;
 
@@ -65,6 +68,10 @@ export default function HistoricoScreen() {
             onPreviousMonth={goToPreviousMonth}
             onNextMonth={goToNextMonth}
           />
+        </Card>
+
+        <Card>
+          <MuscleGroupStatsChart stats={muscleGroupStats} />
         </Card>
       </ScrollView>
     </SafeAreaView>

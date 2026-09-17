@@ -16,6 +16,7 @@ import { CompleteWorkoutSessionUseCase } from "@application/attendance/CompleteW
 import { GetWeeklyAttendanceUseCase } from "@application/attendance/GetWeeklyAttendance.usecase";
 import { GetMonthlyAttendanceUseCase } from "@application/attendance/GetMonthlyAttendance.usecase";
 import { GetMonthlyGoalProgressUseCase } from "@application/attendance/GetMonthlyGoalProgress.usecase";
+import { GetMuscleGroupStatsUseCase } from "@application/attendance/GetMuscleGroupStats.usecase";
 import { RegisterWeightEntryUseCase } from "@application/progress/RegisterWeightEntry.usecase";
 import { GetWeightHistoryUseCase } from "@application/progress/GetWeightHistory.usecase";
 import { GetBmiHistoryUseCase } from "@application/progress/GetBmiHistory.usecase";
@@ -81,6 +82,11 @@ export function buildContainer(client: SupabaseClient) {
       getMonthlyGoalProgress: new GetMonthlyGoalProgressUseCase(
         attendanceRepository,
         profileRepository,
+      ),
+      getMuscleGroupStats: new GetMuscleGroupStatsUseCase(
+        attendanceRepository,
+        workoutPlanRepository,
+        exerciseRepository,
       ),
     },
     progress: {
