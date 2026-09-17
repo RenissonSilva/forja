@@ -1,5 +1,6 @@
 import { BmiClassification } from "@domain/value-objects/Bmi";
 import { WorkoutPlanColorTag } from "@domain/entities/WorkoutPlan";
+import { MeasurementType } from "@domain/entities/BodyMeasurement";
 
 /** FORJA is a dark-only design (see the Claude Design reference screens). */
 export const colors = {
@@ -55,4 +56,26 @@ export const bmiClassificationLabels: Record<BmiClassification, string> = {
   saudavel: "saudável",
   sobrepeso: "sobrepeso",
   obesidade: "obesidade",
+};
+
+export const measurementColors: Record<MeasurementType, string> = {
+  cintura: "#FF6A1A",
+  abdomen: "#F2C230",
+  quadril: "#679ff3ff",
+  biceps: "#5FBFA8",
+  coxas: "#7FB069",
+  peitoral: "#B07FD1",
+  panturrilhas: "#C97F4A",
+  antebraco: "#D9D2C5",
+};
+
+export const measurementLabels: Record<MeasurementType, string> = {
+  cintura: "Cintura",
+  abdomen: "Abdômen",
+  quadril: "Quadril",
+  biceps: "Bíceps",
+  coxas: "Coxas",
+  peitoral: "Peitoral",
+  panturrilhas: "Panturrilhas",
+  antebraco: "Antebraço",
 };

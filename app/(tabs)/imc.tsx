@@ -3,7 +3,11 @@ import { Card } from "@presentation/components/ui/Card";
 import { Icon } from "@presentation/components/ui/Icon";
 import { BmiGauge } from "@presentation/components/features/BmiGauge";
 import { WeightImcChart } from "@presentation/components/features/WeightImcChart";
+import { MeasurementsGrid } from "@presentation/components/features/MeasurementsGrid";
+import { MeasurementsProgressChart } from "@presentation/components/features/MeasurementsProgressChart";
+import { RegisterMeasurementsSheet } from "@presentation/components/features/RegisterMeasurementsSheet";
 import { useBmiHistory } from "@presentation/hooks/useBmiHistory";
+import { useMeasurementsHistory } from "@presentation/hooks/useMeasurementsHistory";
 import { useProfile } from "@presentation/hooks/useProfile";
 import { useWeightHistory } from "@presentation/hooks/useWeightHistory";
 import {
@@ -21,10 +25,17 @@ export default function ImcScreen() {
   const { profile, update } = useProfile();
   const { points, refresh: refreshBmi } = useBmiHistory(profile?.id);
   const { registerWeight } = useWeightHistory(profile?.id);
+  const {
+    entries: measurements,
+    latestByType: latestMeasurementByType,
+    registerMeasurements,
+  } = useMeasurementsHistory(profile?.id);
   const [draftHeight, setDraftHeight] = useState<number | null>(null);
   const [draftWeight, setDraftWeight] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [hasSaved, setHasSaved] = useState(false);
+  const [measurementsSheetKey, setMeasurementsSheetKey] = useState(0);
+  const [isMeasurementsSheetOpen, setIsMeasurementsSheetOpen] = useState(false);
 
   if (!profile) return null;
 
@@ -124,6 +135,20 @@ export default function ImcScreen() {
             <WeightImcChart points={points} />
           </Card>
         ) : null}
+
+        <MeasurementsGrid
+          history={measurements}
+          onRegisterPress={() => {
+            setMeasurementsSheetKey((key) => key + 1);
+            setIsMeasurementsSheetOpen(true);
+          }}
+        />
+
+        {measurements.length > 0 ? (
+          <Card style={styles.progressCard}>
+            <MeasurementsProgressChart history={measurements} />
+          </Card>
+        ) : null}
       </ScrollView>
 
       {isDirty ? (
@@ -131,6 +156,14 @@ export default function ImcScreen() {
           <Button label="Salvar" onPress={handleSave} loading={isSaving} />
         </View>
       ) : null}
+
+      <RegisterMeasurementsSheet
+        key={measurementsSheetKey}
+        visible={isMeasurementsSheetOpen}
+        onClose={() => setIsMeasurementsSheetOpen(false)}
+        latestByType={latestMeasurementByType}
+        onSave={registerMeasurements}
+      />
     </SafeAreaView>
   );
 }

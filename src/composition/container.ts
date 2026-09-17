@@ -21,6 +21,8 @@ import { GetMuscleGroupStatsUseCase } from "@application/attendance/GetMuscleGro
 import { RegisterWeightEntryUseCase } from "@application/progress/RegisterWeightEntry.usecase";
 import { GetWeightHistoryUseCase } from "@application/progress/GetWeightHistory.usecase";
 import { GetBmiHistoryUseCase } from "@application/progress/GetBmiHistory.usecase";
+import { RegisterMeasurementsUseCase } from "@application/progress/RegisterMeasurements.usecase";
+import { GetMeasurementsHistoryUseCase } from "@application/progress/GetMeasurementsHistory.usecase";
 import { SignUpWithEmailUseCase } from "@application/auth/SignUpWithEmail.usecase";
 import { SignInWithEmailUseCase } from "@application/auth/SignInWithEmail.usecase";
 import { SignInWithGoogleUseCase } from "@application/auth/SignInWithGoogle.usecase";
@@ -33,6 +35,7 @@ import { SupabaseAuthRepository } from "@infrastructure/repositories/SupabaseAut
 import { SupabaseExerciseRepository } from "@infrastructure/repositories/SupabaseExerciseRepository";
 import { SupabaseProfileRepository } from "@infrastructure/repositories/SupabaseProfileRepository";
 import { SupabaseWeightEntryRepository } from "@infrastructure/repositories/SupabaseWeightEntryRepository";
+import { SupabaseBodyMeasurementRepository } from "@infrastructure/repositories/SupabaseBodyMeasurementRepository";
 import { SupabaseWorkoutPlanRepository } from "@infrastructure/repositories/SupabaseWorkoutPlanRepository";
 
 /** Composition root: wires repositories (Infrastructure) into use cases (Application). */
@@ -43,6 +46,7 @@ export function buildContainer(client: SupabaseClient) {
   const workoutPlanRepository = new SupabaseWorkoutPlanRepository(client);
   const attendanceRepository = new SupabaseAttendanceRepository(client);
   const weightEntryRepository = new SupabaseWeightEntryRepository(client);
+  const bodyMeasurementRepository = new SupabaseBodyMeasurementRepository(client);
 
   return {
     auth: {
@@ -95,6 +99,8 @@ export function buildContainer(client: SupabaseClient) {
       registerWeight: new RegisterWeightEntryUseCase(weightEntryRepository),
       getWeightHistory: new GetWeightHistoryUseCase(weightEntryRepository),
       getBmiHistory: new GetBmiHistoryUseCase(weightEntryRepository, profileRepository),
+      registerMeasurements: new RegisterMeasurementsUseCase(bodyMeasurementRepository),
+      getMeasurementsHistory: new GetMeasurementsHistoryUseCase(bodyMeasurementRepository),
     },
   };
 }

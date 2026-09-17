@@ -19,6 +19,7 @@ export type IconName =
   | "trash"
   | "pencil"
   | "grip"
+  | "ruler"
   | "x";
 
 interface IconProps {
@@ -220,6 +221,28 @@ export function Icon({
           <Circle cx={15} cy={6} r={1.6} fill={color} />
           <Circle cx={15} cy={12} r={1.6} fill={color} />
           <Circle cx={15} cy={18} r={1.6} fill={color} />
+        </Svg>
+      );
+    case "ruler":
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <Rect
+            x={3}
+            y={7.5}
+            width={18}
+            height={9}
+            rx={2}
+            transform="rotate(-45 12 12)"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M8.8 10.3l1.3 1.3M11.4 7.7l1.3 1.3M14 5.1l1.3 1.3"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
         </Svg>
       );
     case "x":

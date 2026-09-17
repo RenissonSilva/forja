@@ -28,6 +28,13 @@ export class InvalidWeeklyGoalError extends DomainError {
   }
 }
 
+export class InvalidMeasurementError extends DomainError {
+  readonly code = "INVALID_MEASUREMENT";
+  constructor(valueCm: number) {
+    super(`Medida inválida: ${valueCm}cm. Informe um valor entre 10 e 300 cm.`);
+  }
+}
+
 export class ProfileNotFoundError extends DomainError {
   readonly code = "PROFILE_NOT_FOUND";
   constructor() {
