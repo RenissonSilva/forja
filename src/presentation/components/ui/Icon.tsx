@@ -7,6 +7,7 @@ export type IconName =
   | "trending-up"
   | "chevron-left"
   | "chevron-right"
+  | "chevron-down"
   | "plus"
   | "home"
   | "play"
@@ -93,6 +94,18 @@ export function Icon({
         <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
           <Path
             d="M9.5 5.5L16 12l-6.5 6.5"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
+      );
+    case "chevron-down":
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M5.5 9.5L12 16l6.5-6.5"
             stroke={color}
             strokeWidth={strokeWidth}
             strokeLinecap="round"

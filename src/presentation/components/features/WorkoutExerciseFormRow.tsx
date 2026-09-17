@@ -1,6 +1,5 @@
 import React from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { WorkoutPlanExercise } from "@domain/entities/WorkoutPlanExercise";
 import { Exercise } from "@domain/entities/Exercise";
 import { colors } from "../../theme/colors";
 import { muscleGroupLabels } from "../../theme/muscleGroups";
@@ -8,10 +7,20 @@ import { fontFamily } from "../../theme/typography";
 import { Icon } from "../ui/Icon";
 import { Stepper } from "../ui/Stepper";
 
+export interface WorkoutExerciseFormValues {
+  sets: number;
+  reps: number;
+  loadKg: number;
+  seatHeight: number | null;
+  seatDistance: number | null;
+  seatIncline: number | null;
+  seatLock: number | null;
+}
+
 interface WorkoutExerciseFormRowProps {
-  order: number;
+  order?: number;
   exercise: Exercise | undefined;
-  planExercise: WorkoutPlanExercise;
+  planExercise: WorkoutExerciseFormValues;
   onChangeSets: (value: number) => void;
   onChangeReps: (value: number) => void;
   onChangeLoad: (value: number) => void;
@@ -19,7 +28,8 @@ interface WorkoutExerciseFormRowProps {
   onChangeSeatDistance: (value: number | null) => void;
   onChangeSeatIncline: (value: number | null) => void;
   onChangeSeatLock: (value: number | null) => void;
-  onRemove: () => void;
+  onRemove?: () => void;
+  hideHeader?: boolean;
 }
 
 function parseSeatValue(text: string): number | null {
@@ -41,28 +51,33 @@ export function WorkoutExerciseFormRow({
   onChangeSeatIncline,
   onChangeSeatLock,
   onRemove,
+  hideHeader = false,
 }: WorkoutExerciseFormRowProps) {
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.orderBadge}>
-          <Text style={styles.orderLabel}>{order}</Text>
-        </View>
-        <View style={styles.info}>
-          <Text style={styles.name}>{exercise?.name ?? "Exercício"}</Text>
-          {exercise ? (
-            <Text style={styles.group}>{muscleGroupLabels[exercise.muscleGroup]}</Text>
+    <View style={hideHeader ? styles.bareContainer : styles.container}>
+      {hideHeader ? null : (
+        <View style={styles.header}>
+          <View style={styles.orderBadge}>
+            <Text style={styles.orderLabel}>{order}</Text>
+          </View>
+          <View style={styles.info}>
+            <Text style={styles.name}>{exercise?.name ?? "Exercício"}</Text>
+            {exercise ? (
+              <Text style={styles.group}>{muscleGroupLabels[exercise.muscleGroup]}</Text>
+            ) : null}
+          </View>
+          {onRemove ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Remover exercício"
+              onPress={onRemove}
+              style={styles.removeButton}
+            >
+              <Icon name="x" size={13} color={colors.textSecondary} strokeWidth={2.2} />
+            </Pressable>
           ) : null}
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Remover exercício"
-          onPress={onRemove}
-          style={styles.removeButton}
-        >
-          <Icon name="x" size={13} color={colors.textSecondary} strokeWidth={2.2} />
-        </Pressable>
-      </View>
+      )}
 
       <View style={styles.steppersRow}>
         <Stepper
@@ -145,6 +160,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.borderSubtle,
     padding: 14,
+    gap: 14,
+  },
+  bareContainer: {
+    padding: 14,
+    paddingTop: 0,
     gap: 14,
   },
   header: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
