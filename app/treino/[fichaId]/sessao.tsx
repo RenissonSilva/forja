@@ -123,10 +123,27 @@ export default function SessaoTreinoScreen() {
     if (!plan || !profile) return;
     setIsFinishing(true);
     try {
-      await services.attendance.completeSession.execute({
-        profileId: profile.id,
-        workoutPlanId: plan.id,
-      });
+      const completedExercises = plan.exercises
+        .filter((planExercise) => completedIds.has(planExercise.id))
+        .map((planExercise) => ({
+          exerciseId: planExercise.exerciseId,
+          sets: planExercise.sets,
+          reps: planExercise.reps,
+          loadKg: planExercise.loadKg,
+        }));
+
+      await Promise.all([
+        services.attendance.completeSession.execute({
+          profileId: profile.id,
+          workoutPlanId: plan.id,
+        }),
+        completedExercises.length > 0
+          ? services.progress.logExercisePerformance.execute({
+              profileId: profile.id,
+              entries: completedExercises,
+            })
+          : Promise.resolve(),
+      ]);
       router.replace("/(tabs)");
     } finally {
       setIsFinishing(false);

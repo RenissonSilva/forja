@@ -3,15 +3,18 @@ import { Icon } from "@presentation/components/ui/Icon";
 import { ProgressBar } from "@presentation/components/ui/ProgressBar";
 import { MonthCalendar } from "@presentation/components/features/MonthCalendar";
 import { MuscleGroupStatsChart } from "@presentation/components/features/MuscleGroupStatsChart";
+import { ExercisePerformanceChart } from "@presentation/components/features/ExercisePerformanceChart";
 import { useMonthlyOverview } from "@presentation/hooks/useMonthlyOverview";
 import { useMuscleGroupStats } from "@presentation/hooks/useMuscleGroupStats";
+import { useExercisePerformanceHistory } from "@presentation/hooks/useExercisePerformanceHistory";
+import { useExercises } from "@presentation/hooks/useExercises";
 import { useProfile } from "@presentation/hooks/useProfile";
 import { colors } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
 import { fontFamily, typography } from "@presentation/theme/typography";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import React from "react";
+import React, { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -20,6 +23,13 @@ export default function HistoricoScreen() {
   const { referenceDate, days, goalProgress, goToPreviousMonth, goToNextMonth } =
     useMonthlyOverview(profile?.id);
   const { stats: muscleGroupStats } = useMuscleGroupStats(profile?.id);
+  const { entries: exercisePerformance } = useExercisePerformanceHistory(profile?.id);
+  const { exercises: allExercises } = useExercises("");
+
+  const exercisesById = useMemo(
+    () => new Map(allExercises.map((exercise) => [exercise.id, exercise])),
+    [allExercises],
+  );
 
   if (!profile) return null;
 
@@ -72,6 +82,10 @@ export default function HistoricoScreen() {
 
         <Card>
           <MuscleGroupStatsChart stats={muscleGroupStats} />
+        </Card>
+
+        <Card>
+          <ExercisePerformanceChart history={exercisePerformance} exercisesById={exercisesById} />
         </Card>
       </ScrollView>
     </SafeAreaView>
