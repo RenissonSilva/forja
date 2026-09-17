@@ -14,13 +14,17 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { router } from "expo-router";
 import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, { useAnimatedRef } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Sortable, { SortableGridRenderItem } from "react-native-sortables";
+import { WorkoutPlan } from "@domain/entities/WorkoutPlan";
 
 export default function HomeScreen() {
   const { profile } = useProfile();
   const { days } = useWeeklyAttendance(profile?.id);
-  const { plans, markAsToday } = useWorkoutPlans(profile?.id);
+  const { plans, markAsToday, reorder } = useWorkoutPlans(profile?.id);
+  const scrollableRef = useAnimatedRef<Animated.ScrollView>();
 
   if (!profile) return null;
 
@@ -38,7 +42,11 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <Animated.ScrollView
+        ref={scrollableRef}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.headerRow}>
           <View>
             <Text style={styles.date}>
@@ -78,7 +86,9 @@ export default function HomeScreen() {
         <View style={styles.listHeaderRow}>
           <View style={styles.listHeader}>
             <Text style={styles.listTitle}>Meus treinos</Text>
-            <Text style={styles.listHint}>Toque no alvo para marcar o próximo treino</Text>
+            <Text style={styles.listHint}>
+              Toque no alvo para marcar o próximo treino · segure e arraste para reordenar
+            </Text>
           </View>
           <Pressable
             accessibilityRole="button"
@@ -90,19 +100,32 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.list}>
-          {plans.map((plan) => (
+        <Sortable.Grid
+          columns={1}
+          data={plans}
+          keyExtractor={(plan) => plan.id}
+          rowGap={10}
+          customHandle
+          scrollableRef={scrollableRef}
+          onDragEnd={({ data }) => reorder(data.map((plan) => plan.id))}
+          renderItem={({ item: plan }: Parameters<SortableGridRenderItem<WorkoutPlan>>[0]) => (
             <WorkoutPlanCard
-              key={plan.id}
               plan={plan}
               isLastCompleted={plan.id === lastCompletedPlan?.id}
               onPress={() => router.push(`/ficha/${plan.id}/editar`)}
               onToggleToday={() => markAsToday(plan.id)}
               onStart={() => startSession(plan)}
+              dragHandle={
+                <Sortable.Handle>
+                  <View style={styles.dragHandleTouchArea}>
+                    <Icon name="grip" size={16} color={colors.textFaint} />
+                  </View>
+                </Sortable.Handle>
+              }
             />
-          ))}
-        </View>
-      </ScrollView>
+          )}
+        />
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
@@ -152,5 +175,5 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryMutedStrong,
   },
   addButtonPressed: { opacity: 0.7 },
-  list: { gap: 10 },
+  dragHandleTouchArea: { paddingHorizontal: 2, paddingVertical: 10 },
 });

@@ -12,6 +12,7 @@ import { AddExerciseToPlanUseCase } from "@application/workout-plans/AddExercise
 import { UpdateWorkoutPlanExerciseUseCase } from "@application/workout-plans/UpdateWorkoutPlanExercise.usecase";
 import { RemoveExerciseFromPlanUseCase } from "@application/workout-plans/RemoveExerciseFromPlan.usecase";
 import { MarkWorkoutPlanAsTodayUseCase } from "@application/workout-plans/MarkWorkoutPlanAsToday.usecase";
+import { ReorderWorkoutPlansUseCase } from "@application/workout-plans/ReorderWorkoutPlans.usecase";
 import { CompleteWorkoutSessionUseCase } from "@application/attendance/CompleteWorkoutSession.usecase";
 import { GetWeeklyAttendanceUseCase } from "@application/attendance/GetWeeklyAttendance.usecase";
 import { GetMonthlyAttendanceUseCase } from "@application/attendance/GetMonthlyAttendance.usecase";
@@ -71,6 +72,7 @@ export function buildContainer(client: SupabaseClient) {
       updateExercise: new UpdateWorkoutPlanExerciseUseCase(workoutPlanRepository),
       removeExercise: new RemoveExerciseFromPlanUseCase(workoutPlanRepository),
       markAsToday: new MarkWorkoutPlanAsTodayUseCase(workoutPlanRepository),
+      reorder: new ReorderWorkoutPlansUseCase(workoutPlanRepository),
     },
     attendance: {
       completeSession: new CompleteWorkoutSessionUseCase(

@@ -16,6 +16,7 @@ export interface WorkoutPlanProps {
   profileId: string;
   name: string;
   colorTag: WorkoutPlanColorTag;
+  order: number;
   isMarkedToday: boolean;
   lastCompletedAt: Date | null;
   exercises: WorkoutPlanExercise[];
@@ -27,7 +28,10 @@ export class WorkoutPlan {
   private constructor(private readonly props: WorkoutPlanProps) {}
 
   static create(
-    props: Pick<WorkoutPlanProps, "id" | "profileId" | "name" | "colorTag"> & { now?: Date },
+    props: Pick<WorkoutPlanProps, "id" | "profileId" | "name" | "colorTag"> & {
+      order?: number;
+      now?: Date;
+    },
   ): Result<WorkoutPlan, InvalidWorkoutPlanNameError> {
     const nameResult = WorkoutPlan.validateName(props.name);
     if (!nameResult.ok) return nameResult;
@@ -39,6 +43,7 @@ export class WorkoutPlan {
         profileId: props.profileId,
         name: nameResult.value,
         colorTag: props.colorTag,
+        order: props.order ?? 0,
         isMarkedToday: false,
         lastCompletedAt: null,
         exercises: [],
@@ -90,6 +95,10 @@ export class WorkoutPlan {
     return ok(new WorkoutPlan({ ...this.props, exercises, updatedAt: now }));
   }
 
+  reorder(order: number, now: Date = new Date()): WorkoutPlan {
+    return new WorkoutPlan({ ...this.props, order, updatedAt: now });
+  }
+
   markAsToday(now: Date = new Date()): WorkoutPlan {
     return new WorkoutPlan({ ...this.props, isMarkedToday: true, updatedAt: now });
   }
@@ -124,6 +133,10 @@ export class WorkoutPlan {
 
   get colorTag(): WorkoutPlanColorTag {
     return this.props.colorTag;
+  }
+
+  get order(): number {
+    return this.props.order;
   }
 
   get isMarkedToday(): boolean {

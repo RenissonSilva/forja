@@ -18,6 +18,7 @@ export class CreateWorkoutPlanUseCase {
       profileId: input.profileId,
       name: input.name,
       colorTag,
+      order: existingPlans.length,
     });
     if (!result.ok) throw result.error;
 

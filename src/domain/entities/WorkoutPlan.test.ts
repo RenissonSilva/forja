@@ -89,6 +89,14 @@ describe("WorkoutPlan#replaceExercise", () => {
   });
 });
 
+describe("WorkoutPlan#reorder", () => {
+  it("updates the plan's order", () => {
+    const plan = makePlan();
+    expect(plan.order).toBe(0);
+    expect(plan.reorder(2).order).toBe(2);
+  });
+});
+
 describe("WorkoutPlan mark as today", () => {
   it("toggles isMarkedToday", () => {
     const plan = makePlan();

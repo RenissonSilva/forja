@@ -7,4 +7,6 @@ export interface WorkoutPlanRepository {
   /** Upserts the whole aggregate (plan + its exercises) transactionally. */
   save(plan: WorkoutPlan): Promise<void>;
   delete(id: string): Promise<void>;
+  /** Persists the new display order for a profile's plans, given their ids in the desired order. */
+  reorderAll(profileId: string, orderedWorkoutPlanIds: string[]): Promise<void>;
 }

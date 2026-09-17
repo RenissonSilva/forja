@@ -49,5 +49,21 @@ export function useWorkoutPlans(profileId: string | undefined) {
     [services, profileId, refresh],
   );
 
-  return { plans, isLoading, refresh, create, remove, markAsToday };
+  const reorder = useCallback(
+    async (orderedWorkoutPlanIds: string[]) => {
+      if (!profileId) return;
+      const previous = plans;
+      const byId = new Map(previous.map((plan) => [plan.id, plan]));
+      setPlans(orderedWorkoutPlanIds.map((id) => byId.get(id)).filter((plan) => !!plan));
+      try {
+        await services.workoutPlans.reorder.execute({ profileId, orderedWorkoutPlanIds });
+      } catch (error) {
+        setPlans(previous);
+        throw error;
+      }
+    },
+    [services, profileId, plans],
+  );
+
+  return { plans, isLoading, refresh, create, remove, markAsToday, reorder };
 }

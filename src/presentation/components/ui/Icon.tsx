@@ -18,6 +18,7 @@ export type IconName =
   | "search"
   | "trash"
   | "pencil"
+  | "grip"
   | "x";
 
 interface IconProps {
@@ -208,6 +209,17 @@ export function Icon({
             strokeLinecap="round"
             strokeLinejoin="round"
           />
+        </Svg>
+      );
+    case "grip":
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <Circle cx={9} cy={6} r={1.6} fill={color} />
+          <Circle cx={9} cy={12} r={1.6} fill={color} />
+          <Circle cx={9} cy={18} r={1.6} fill={color} />
+          <Circle cx={15} cy={6} r={1.6} fill={color} />
+          <Circle cx={15} cy={12} r={1.6} fill={color} />
+          <Circle cx={15} cy={18} r={1.6} fill={color} />
         </Svg>
       );
     case "x":

@@ -15,6 +15,7 @@ export class SupabaseWorkoutPlanRepository implements WorkoutPlanRepository {
       .from("workout_plans")
       .select("*")
       .eq("profile_id", profileId)
+      .order("order_index", { ascending: true })
       .returns<SupabaseWorkoutPlanRow[]>();
     if (planError) throw planError;
     if (!planRows || planRows.length === 0) return [];
@@ -101,5 +102,18 @@ export class SupabaseWorkoutPlanRepository implements WorkoutPlanRepository {
   async delete(id: string): Promise<void> {
     const { error } = await this.client.from("workout_plans").delete().eq("id", id);
     if (error) throw error;
+  }
+
+  async reorderAll(profileId: string, orderedWorkoutPlanIds: string[]): Promise<void> {
+    await Promise.all(
+      orderedWorkoutPlanIds.map(async (id, index) => {
+        const { error } = await this.client
+          .from("workout_plans")
+          .update({ order_index: index })
+          .eq("id", id)
+          .eq("profile_id", profileId);
+        if (error) throw error;
+      }),
+    );
   }
 }

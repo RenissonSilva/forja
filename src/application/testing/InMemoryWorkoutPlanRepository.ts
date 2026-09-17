@@ -5,7 +5,9 @@ export class InMemoryWorkoutPlanRepository implements WorkoutPlanRepository {
   private readonly items = new Map<string, WorkoutPlan>();
 
   async findAllByProfile(profileId: string): Promise<WorkoutPlan[]> {
-    return [...this.items.values()].filter((plan) => plan.profileId === profileId);
+    return [...this.items.values()]
+      .filter((plan) => plan.profileId === profileId)
+      .sort((a, b) => a.order - b.order);
   }
 
   async findById(id: string): Promise<WorkoutPlan | null> {
@@ -25,5 +27,14 @@ export class InMemoryWorkoutPlanRepository implements WorkoutPlanRepository {
 
   async delete(id: string): Promise<void> {
     this.items.delete(id);
+  }
+
+  async reorderAll(profileId: string, orderedWorkoutPlanIds: string[]): Promise<void> {
+    orderedWorkoutPlanIds.forEach((id, index) => {
+      const plan = this.items.get(id);
+      if (plan && plan.profileId === profileId) {
+        this.items.set(id, plan.reorder(index));
+      }
+    });
   }
 }

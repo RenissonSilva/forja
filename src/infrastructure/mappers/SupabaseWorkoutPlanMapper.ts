@@ -6,6 +6,7 @@ export interface SupabaseWorkoutPlanRow {
   profile_id: string;
   name: string;
   color_tag: string;
+  order_index: number;
   is_marked_today: boolean;
   last_completed_at: string | null;
   created_at: string;
@@ -55,6 +56,7 @@ export class SupabaseWorkoutPlanMapper {
       profileId: planRow.profile_id,
       name: planRow.name,
       colorTag: planRow.color_tag as WorkoutPlanColorTag,
+      order: planRow.order_index,
       isMarkedToday: planRow.is_marked_today,
       lastCompletedAt: planRow.last_completed_at ? new Date(planRow.last_completed_at) : null,
       exercises,
@@ -69,6 +71,7 @@ export class SupabaseWorkoutPlanMapper {
       profile_id: plan.profileId,
       name: plan.name,
       color_tag: plan.colorTag,
+      order_index: plan.order,
       is_marked_today: plan.isMarkedToday,
       last_completed_at: plan.lastCompletedAt ? plan.lastCompletedAt.toISOString() : null,
       created_at: plan.createdAt.toISOString(),

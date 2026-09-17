@@ -11,6 +11,7 @@ interface WorkoutPlanCardProps {
   onPress: () => void;
   onToggleToday: () => void;
   onStart: () => void;
+  dragHandle?: React.ReactNode;
 }
 
 export function WorkoutPlanCard({
@@ -19,6 +20,7 @@ export function WorkoutPlanCard({
   onPress,
   onToggleToday,
   onStart,
+  dragHandle,
 }: WorkoutPlanCardProps) {
   const accentColor = workoutPlanColors[plan.colorTag];
 
@@ -32,6 +34,7 @@ export function WorkoutPlanCard({
       ]}
     >
       <View style={[styles.accentBar, { backgroundColor: accentColor }]} />
+      {dragHandle}
       <View style={styles.content}>
         <View style={styles.titleRow}>
           <Text style={styles.name} numberOfLines={2}>
