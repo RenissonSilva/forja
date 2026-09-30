@@ -6,7 +6,6 @@ import {
   metricValue,
   progressChange,
 } from "@domain/services/exerciseProgression";
-import { monthsAgoKey } from "@shared/date-utils";
 import { colors } from "../../theme/colors";
 import { spacing } from "../../theme/spacing";
 import { fontFamily } from "../../theme/typography";
@@ -29,16 +28,7 @@ import {
   trendColors,
   trendOf,
 } from "./exerciseProgressFormat";
-
-type Period = "1m" | "3m" | "all";
-
-const PERIOD_OPTIONS = [
-  { value: "1m", label: "1 mês" },
-  { value: "3m", label: "3 meses" },
-  { value: "all", label: "Tudo" },
-] as const;
-
-const PERIOD_MONTHS: Record<Exclude<Period, "all">, number> = { "1m": 1, "3m": 3 };
+import { PROGRESS_PERIOD_OPTIONS, ProgressPeriod, filterByPeriod } from "./progressPeriod";
 
 interface ExerciseProgressDetailProps {
   item: ExerciseProgressItem;
@@ -74,11 +64,10 @@ function ProgressChartCard({
   metric: ProgressionMetric;
   onChangeMetric: (metric: ProgressionMetric) => void;
 }) {
-  const [period, setPeriod] = useState<Period>("all");
+  const [period, setPeriod] = useState<ProgressPeriod>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const since = period === "all" ? null : monthsAgoKey(PERIOD_MONTHS[period]);
-  const sessions = since ? item.sessions.filter((session) => session.date >= since) : item.sessions;
+  const sessions = filterByPeriod(item.sessions, period);
   // Until a point is tapped (or if it left the period), the latest session is shown.
   const tappedIndex = sessions.findIndex((session) => session.id === selectedId);
   const selectedIndex = tappedIndex >= 0 ? tappedIndex : sessions.length - 1;
@@ -156,7 +145,7 @@ function ProgressChartCard({
       )}
 
       <View style={styles.chartFooter}>
-        <SegmentedControl options={PERIOD_OPTIONS} value={period} onChange={setPeriod} />
+        <SegmentedControl options={PROGRESS_PERIOD_OPTIONS} value={period} onChange={setPeriod} />
         {points.some((point) => point.highlighted) ? (
           <View style={styles.legend}>
             <View style={styles.legendHalo}>

@@ -65,6 +65,7 @@ function RootNavigator() {
         <Stack.Screen name="perfil/editar" options={{ presentation: "modal" }} />
         <Stack.Screen name="progresso/index" />
         <Stack.Screen name="progresso/[exerciseId]" />
+        <Stack.Screen name="medidas/[type]" />
         <Stack.Screen
           name="treino/[fichaId]/sessao"
           options={{ presentation: "fullScreenModal" }}

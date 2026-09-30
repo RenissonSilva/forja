@@ -16,6 +16,8 @@ interface ProgressLineChartProps {
   selectedIndex: number;
   onSelect: (index: number) => void;
   formatAxisValue: (value: number) => string;
+  /** Line, fill and dots; the app's primary color by default. */
+  color?: string;
   height?: number;
 }
 
@@ -34,6 +36,7 @@ export function ProgressLineChart({
   selectedIndex,
   onSelect,
   formatAxisValue,
+  color = colors.primary,
   height = 180,
 }: ProgressLineChartProps) {
   const [width, setWidth] = useState(0);
@@ -79,8 +82,8 @@ export function ProgressLineChart({
           <Svg width={width} height={height}>
             <Defs>
               <LinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <Stop offset="0" stopColor={colors.primary} stopOpacity={0.2} />
-                <Stop offset="1" stopColor={colors.primary} stopOpacity={0} />
+                <Stop offset="0" stopColor={color} stopOpacity={0.2} />
+                <Stop offset="1" stopColor={color} stopOpacity={0} />
               </LinearGradient>
             </Defs>
 
@@ -106,7 +109,7 @@ export function ProgressLineChart({
                 <Path
                   d={linePath}
                   fill="none"
-                  stroke={colors.primary}
+                  stroke={color}
                   strokeWidth={2.4}
                   strokeLinejoin="round"
                   strokeLinecap="round"
@@ -131,13 +134,13 @@ export function ProgressLineChart({
               if (points[index]?.highlighted) {
                 return (
                   <React.Fragment key={index}>
-                    <Circle cx={x} cy={y} r={7} fill={colors.primary} fillOpacity={0.22} />
-                    <Circle cx={x} cy={y} r={3.4} fill={colors.primary} />
+                    <Circle cx={x} cy={y} r={7} fill={color} fillOpacity={0.22} />
+                    <Circle cx={x} cy={y} r={3.4} fill={color} />
                   </React.Fragment>
                 );
               }
               return points.length <= MAX_PLAIN_DOTS ? (
-                <Circle key={index} cx={x} cy={y} r={2.6} fill={colors.primary} />
+                <Circle key={index} cx={x} cy={y} r={2.6} fill={color} />
               ) : null;
             })}
 
@@ -146,7 +149,7 @@ export function ProgressLineChart({
                 cx={selected.x}
                 cy={selected.y}
                 r={6}
-                fill={colors.primary}
+                fill={color}
                 stroke={colors.surface}
                 strokeWidth={2.5}
               />

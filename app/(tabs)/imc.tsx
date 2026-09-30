@@ -4,7 +4,6 @@ import { Icon } from "@presentation/components/ui/Icon";
 import { BmiGauge } from "@presentation/components/features/BmiGauge";
 import { WeightImcChart } from "@presentation/components/features/WeightImcChart";
 import { MeasurementsGrid } from "@presentation/components/features/MeasurementsGrid";
-import { MeasurementsProgressChart } from "@presentation/components/features/MeasurementsProgressChart";
 import { RegisterMeasurementsSheet } from "@presentation/components/features/RegisterMeasurementsSheet";
 import { useBmiHistory } from "@presentation/hooks/useBmiHistory";
 import { useMeasurementsHistory } from "@presentation/hooks/useMeasurementsHistory";
@@ -17,6 +16,7 @@ import {
 } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
 import { fontFamily, typography } from "@presentation/theme/typography";
+import { router } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -142,13 +142,8 @@ export default function ImcScreen() {
             setMeasurementsSheetKey((key) => key + 1);
             setIsMeasurementsSheetOpen(true);
           }}
+          onOpenMeasurement={(type) => router.push(`/medidas/${type}`)}
         />
-
-        {measurements.length > 0 ? (
-          <Card style={styles.progressCard}>
-            <MeasurementsProgressChart history={measurements} />
-          </Card>
-        ) : null}
       </ScrollView>
 
       {isDirty ? (

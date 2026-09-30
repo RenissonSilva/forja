@@ -4,6 +4,7 @@ import {
   MEASUREMENT_TYPES,
   MeasurementType,
 } from "@domain/entities/BodyMeasurement";
+import { groupMeasurementsByType } from "@domain/services/measurementProgression";
 import { RegisterMeasurementsInput } from "@application/dtos/RegisterMeasurements.dto";
 import { useFocusEffect } from "expo-router";
 import { useAppServices } from "../providers/AppServicesProvider";
@@ -13,15 +14,16 @@ export function useMeasurementsHistory(profileId: string | undefined) {
   const [entries, setEntries] = useState<BodyMeasurement[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  const byType = useMemo(() => groupMeasurementsByType(entries), [entries]);
+
   const latestByType = useMemo(() => {
     const result: Partial<Record<MeasurementType, BodyMeasurement>> = {};
     for (const type of MEASUREMENT_TYPES) {
-      const forType = entries.filter((entry) => entry.type === type);
-      const latest = forType[forType.length - 1];
+      const latest = byType[type]?.at(-1);
       if (latest) result[type] = latest;
     }
     return result;
-  }, [entries]);
+  }, [byType]);
 
   const refresh = useCallback(async () => {
     if (!profileId) return;
@@ -42,5 +44,5 @@ export function useMeasurementsHistory(profileId: string | undefined) {
     [services, profileId, refresh],
   );
 
-  return { entries, latestByType, isLoading, refresh, registerMeasurements };
+  return { entries, byType, latestByType, isLoading, refresh, registerMeasurements };
 }
