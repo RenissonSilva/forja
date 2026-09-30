@@ -1,4 +1,5 @@
-import { ExerciseLog } from "@domain/entities/ExerciseLog";
+import { ExerciseLog, ExerciseSetLog } from "@domain/entities/ExerciseLog";
+import { SupabaseSetDetail, setFromDetail, setToDetail } from "./SupabaseSetDetailMapper";
 
 export interface SupabaseExerciseLogRow {
   id: string;
@@ -8,18 +9,22 @@ export interface SupabaseExerciseLogRow {
   sets: number;
   reps: number;
   load_kg: number;
+  /** Null on rows logged before per-set tracking existed. */
+  set_details: SupabaseSetDetail[] | null;
 }
 
 export class SupabaseExerciseLogMapper {
   static toDomain(row: SupabaseExerciseLogRow): ExerciseLog {
+    const sets: ExerciseSetLog[] = row.set_details
+      ? row.set_details.map(setFromDetail)
+      : Array.from({ length: row.sets }, () => ({ reps: row.reps, loadKg: Number(row.load_kg) }));
+
     return ExerciseLog.restore({
       id: row.id,
       profileId: row.profile_id,
       exerciseId: row.exercise_id,
       date: row.date,
-      sets: row.sets,
-      reps: row.reps,
-      loadKg: row.load_kg,
+      sets,
     });
   }
 
@@ -30,9 +35,10 @@ export class SupabaseExerciseLogMapper {
       profile_id: props.profileId,
       exercise_id: props.exerciseId,
       date: props.date,
-      sets: props.sets,
-      reps: props.reps,
-      load_kg: props.loadKg,
+      sets: entry.sets,
+      reps: entry.reps,
+      load_kg: entry.loadKg,
+      set_details: props.sets.map(setToDetail),
     };
   }
 }

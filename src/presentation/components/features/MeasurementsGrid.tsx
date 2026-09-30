@@ -3,10 +3,10 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { BodyMeasurement, MEASUREMENT_TYPES, MeasurementType } from "@domain/entities/BodyMeasurement";
 import { Card } from "@presentation/components/ui/Card";
 import { Icon } from "@presentation/components/ui/Icon";
+import { Sparkline } from "@presentation/components/ui/Sparkline";
 import { colors, measurementColors, measurementLabels } from "@presentation/theme/colors";
 import { radius, spacing } from "@presentation/theme/spacing";
 import { fontFamily } from "@presentation/theme/typography";
-import { Polyline, Svg } from "react-native-svg";
 
 interface MeasurementsGridProps {
   history: BodyMeasurement[];
@@ -77,29 +77,6 @@ export function MeasurementsGrid({ history, onRegisterPress }: MeasurementsGridP
         </View>
       )}
     </Card>
-  );
-}
-
-function Sparkline({ values, color }: { values: number[]; color: string }) {
-  const width = 58;
-  const height = 24;
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = max - min || 1;
-  const step = width / (values.length - 1 || 1);
-
-  const points = values
-    .map((value, index) => {
-      const x = index * step;
-      const y = height - ((value - min) / range) * height;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-
-  return (
-    <Svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-      <Polyline points={points} fill="none" stroke={color} strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round" />
-    </Svg>
   );
 }
 

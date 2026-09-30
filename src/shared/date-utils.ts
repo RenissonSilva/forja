@@ -8,6 +8,7 @@ import {
   parseISO,
   startOfMonth,
   startOfWeek,
+  subMonths,
 } from "date-fns";
 
 export function startOfMonthDate(date: Date): Date {
@@ -33,6 +34,11 @@ export function fromDateKey(key: DateKey): Date {
 
 export function todayKey(): DateKey {
   return toDateKey(new Date());
+}
+
+/** The date `months` calendar months before `from` (today by default). */
+export function monthsAgoKey(months: number, from: Date = new Date()): DateKey {
+  return toDateKey(subMonths(from, months));
 }
 
 export function isSameDateKey(a: DateKey, b: DateKey): boolean {

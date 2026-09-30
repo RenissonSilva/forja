@@ -22,8 +22,6 @@ export class LogExercisePerformanceUseCase {
         exerciseId: entry.exerciseId,
         date,
         sets: entry.sets,
-        reps: entry.reps,
-        loadKg: entry.loadKg,
       });
       if (!result.ok) throw result.error;
       entries.push(result.value);

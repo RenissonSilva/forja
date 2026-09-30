@@ -49,6 +49,13 @@ export class InvalidRepsError extends DomainError {
   }
 }
 
+export class InvalidDurationError extends DomainError {
+  readonly code = "INVALID_DURATION";
+  constructor(durationSeconds: number) {
+    super(`Tempo inválido: ${durationSeconds}s. Informe um tempo entre 00:01 e 99:59.`);
+  }
+}
+
 export class InvalidLoadError extends DomainError {
   readonly code = "INVALID_LOAD";
   constructor(loadKg: number) {

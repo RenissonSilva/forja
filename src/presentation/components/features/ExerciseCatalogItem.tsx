@@ -5,6 +5,7 @@ import { colors } from "../../theme/colors";
 import { muscleGroupLabels } from "../../theme/muscleGroups";
 import { fontFamily } from "../../theme/typography";
 import { Icon } from "../ui/Icon";
+import { ExerciseHelpButton } from "./ExerciseHelpButton";
 
 interface ExerciseCatalogItemProps {
   exercise: Exercise;
@@ -25,6 +26,7 @@ export function ExerciseCatalogItem({ exercise, selected, onAdd }: ExerciseCatal
         <Text style={styles.name}>{exercise.name}</Text>
         <Text style={styles.group}>{muscleGroupLabels[exercise.muscleGroup]}</Text>
       </View>
+      <ExerciseHelpButton exerciseName={exercise.name} isCustom={exercise.isCustom} size={22} />
       <View style={[styles.addButton, selected && styles.addButtonSelected]}>
         <Icon
           name={selected ? "check" : "plus"}

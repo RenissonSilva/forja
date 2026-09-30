@@ -25,11 +25,14 @@ import { RegisterMeasurementsUseCase } from "@application/progress/RegisterMeasu
 import { GetMeasurementsHistoryUseCase } from "@application/progress/GetMeasurementsHistory.usecase";
 import { LogExercisePerformanceUseCase } from "@application/progress/LogExercisePerformance.usecase";
 import { GetExercisePerformanceHistoryUseCase } from "@application/progress/GetExercisePerformanceHistory.usecase";
+import { GetExerciseProgressUseCase } from "@application/progress/GetExerciseProgress.usecase";
 import { SignUpWithEmailUseCase } from "@application/auth/SignUpWithEmail.usecase";
 import { SignInWithEmailUseCase } from "@application/auth/SignInWithEmail.usecase";
 import { SignInWithGoogleUseCase } from "@application/auth/SignInWithGoogle.usecase";
 import { SignOutUseCase } from "@application/auth/SignOut.usecase";
 import { GetCurrentUserUseCase } from "@application/auth/GetCurrentUser.usecase";
+import { GetExerciseDetailsUseCase } from "@application/exercise-info/GetExerciseDetails.usecase";
+import { ListExerciseInfoIndexUseCase } from "@application/exercise-info/ListExerciseInfoIndex.usecase";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { SupabaseAttendanceRepository } from "@infrastructure/repositories/SupabaseAttendanceRepository";
@@ -40,6 +43,12 @@ import { SupabaseWeightEntryRepository } from "@infrastructure/repositories/Supa
 import { SupabaseBodyMeasurementRepository } from "@infrastructure/repositories/SupabaseBodyMeasurementRepository";
 import { SupabaseExerciseLogRepository } from "@infrastructure/repositories/SupabaseExerciseLogRepository";
 import { SupabaseWorkoutPlanRepository } from "@infrastructure/repositories/SupabaseWorkoutPlanRepository";
+import { AsyncStorageCache } from "@infrastructure/cache/AsyncStorageCache";
+import { ExerciseDbHttpClient } from "@infrastructure/http/ExerciseDbHttpClient";
+import { RemoteExerciseInfoRepository } from "@infrastructure/repositories/RemoteExerciseInfoRepository";
+import { CachedExerciseInfoRepository } from "@infrastructure/repositories/CachedExerciseInfoRepository";
+import { MyMemoryTranslatorRepository } from "@infrastructure/translation/MyMemoryTranslatorRepository";
+import { EXERCISE_INFO_CONFIG } from "@infrastructure/config/exerciseInfoConfig";
 
 /** Composition root: wires repositories (Infrastructure) into use cases (Application). */
 export function buildContainer(client: SupabaseClient) {
@@ -51,6 +60,19 @@ export function buildContainer(client: SupabaseClient) {
   const weightEntryRepository = new SupabaseWeightEntryRepository(client);
   const bodyMeasurementRepository = new SupabaseBodyMeasurementRepository(client);
   const exerciseLogRepository = new SupabaseExerciseLogRepository(client);
+
+  const asyncStorageCache = new AsyncStorageCache();
+  const exerciseInfoRepository = new CachedExerciseInfoRepository(
+    new RemoteExerciseInfoRepository(
+      new ExerciseDbHttpClient(EXERCISE_INFO_CONFIG.baseUrl, EXERCISE_INFO_CONFIG.requestTimeoutMs),
+    ),
+    asyncStorageCache,
+  );
+  const translatorRepository = new MyMemoryTranslatorRepository(
+    EXERCISE_INFO_CONFIG.translateBaseUrl,
+    asyncStorageCache,
+    EXERCISE_INFO_CONFIG.translateContactEmail,
+  );
 
   return {
     auth: {
@@ -109,6 +131,14 @@ export function buildContainer(client: SupabaseClient) {
       getExercisePerformanceHistory: new GetExercisePerformanceHistoryUseCase(
         exerciseLogRepository,
       ),
+      getExerciseProgress: new GetExerciseProgressUseCase(
+        exerciseLogRepository,
+        exerciseRepository,
+      ),
+    },
+    exerciseInfo: {
+      getDetails: new GetExerciseDetailsUseCase(exerciseInfoRepository, translatorRepository),
+      listIndex: new ListExerciseInfoIndexUseCase(exerciseInfoRepository),
     },
   };
 }

@@ -14,6 +14,9 @@ export const MUSCLE_GROUPS = [
 
 export type MuscleGroup = (typeof MUSCLE_GROUPS)[number];
 
+/** Core and cardio sets are done for time; every other group counts reps. */
+const TIMED_MUSCLE_GROUPS: readonly MuscleGroup[] = ["core", "cardio"];
+
 export interface ExerciseProps {
   id: string;
   name: string;
@@ -58,6 +61,16 @@ export class Exercise {
 
   get muscleGroup(): MuscleGroup {
     return this.props.muscleGroup;
+  }
+
+  /** Sets are measured in time (MM:SS) instead of reps. */
+  get isTimed(): boolean {
+    return TIMED_MUSCLE_GROUPS.includes(this.props.muscleGroup);
+  }
+
+  /** Cardio has no load to track. */
+  get usesLoad(): boolean {
+    return this.props.muscleGroup !== "cardio";
   }
 
   get isCustom(): boolean {

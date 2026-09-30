@@ -3,6 +3,8 @@ import { fontFamily } from "@presentation/theme/typography";
 import { useAuth } from "@presentation/hooks/useAuth";
 import { useProfile } from "@presentation/hooks/useProfile";
 import { AppServicesProvider } from "@presentation/providers/AppServicesProvider";
+import { ExerciseInfoIndexProvider } from "@presentation/providers/ExerciseInfoIndexProvider";
+import { useActiveWorkoutStore } from "@presentation/stores/activeWorkoutStore";
 import { StatusBar } from "expo-status-bar";
 import { Stack } from "expo-router";
 import React from "react";
@@ -17,7 +19,9 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <StatusBar style="light" />
         <AppServicesProvider>
-          <RootNavigator />
+          <ExerciseInfoIndexProvider>
+            <RootNavigator />
+          </ExerciseInfoIndexProvider>
         </AppServicesProvider>
         <Toaster
           theme="dark"
@@ -35,8 +39,10 @@ export default function RootLayout() {
 function RootNavigator() {
   const { user, isLoading: isAuthLoading } = useAuth();
   const { profile, isLoading: isProfileLoading } = useProfile();
+  // Wait for the persisted workout so the tabs can resume it on first mount.
+  const hasHydratedWorkout = useActiveWorkoutStore((state) => state.hasHydrated);
 
-  if (isAuthLoading || (user && isProfileLoading)) {
+  if (isAuthLoading || (user && isProfileLoading) || !hasHydratedWorkout) {
     return (
       <View style={styles.loading}>
         <ActivityIndicator color={colors.primary} size="large" />
@@ -57,6 +63,8 @@ function RootNavigator() {
         <Stack.Screen name="ficha/novo" options={{ presentation: "modal" }} />
         <Stack.Screen name="ficha/[id]/editar" options={{ presentation: "modal" }} />
         <Stack.Screen name="perfil/editar" options={{ presentation: "modal" }} />
+        <Stack.Screen name="progresso/index" />
+        <Stack.Screen name="progresso/[exerciseId]" />
         <Stack.Screen
           name="treino/[fichaId]/sessao"
           options={{ presentation: "fullScreenModal" }}

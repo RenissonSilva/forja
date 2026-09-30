@@ -1,13 +1,12 @@
 import { useCallback, useRef, useState } from "react";
 import { WorkoutPlan } from "@domain/entities/WorkoutPlan";
+import { WorkoutSet } from "@domain/entities/WorkoutPlanExercise";
 import { useFocusEffect } from "expo-router";
 import { useAppServices } from "../providers/AppServicesProvider";
 
 interface AddExerciseInput {
   exerciseId: string;
-  sets: number;
-  reps: number;
-  loadKg: number;
+  sets: WorkoutSet[];
   seatHeight?: number | null;
   seatDistance?: number | null;
   seatIncline?: number | null;
@@ -15,9 +14,7 @@ interface AddExerciseInput {
 }
 
 interface UpdateExerciseInput {
-  sets?: number;
-  reps?: number;
-  loadKg?: number;
+  sets?: WorkoutSet[];
   seatHeight?: number | null;
   seatDistance?: number | null;
   seatIncline?: number | null;
@@ -53,7 +50,7 @@ export function useWorkoutPlan(workoutPlanId: string | undefined) {
   // reverting it. Chaining them through this queue forces strict ordering so
   // each call only starts once the previous one has fully committed.
   const queueRef = useRef<Promise<unknown>>(Promise.resolve());
-  const enqueue = useCallback(<T,>(task: () => Promise<T>): Promise<T> => {
+  const enqueue = useCallback(<T>(task: () => Promise<T>): Promise<T> => {
     const result = queueRef.current.then(task, task);
     queueRef.current = result.then(
       () => undefined,

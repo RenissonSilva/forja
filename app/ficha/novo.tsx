@@ -1,6 +1,10 @@
 import { ExerciseCatalogItem } from "@presentation/components/features/ExerciseCatalogItem";
 import { MuscleGroupFilter } from "@presentation/components/features/MuscleGroupFilter";
-import { WorkoutExerciseFormRow } from "@presentation/components/features/WorkoutExerciseFormRow";
+import {
+  WorkoutExerciseFormRow,
+  WorkoutExerciseFormValues,
+} from "@presentation/components/features/WorkoutExerciseFormRow";
+import { conformSets, defaultSetsFor } from "@presentation/components/features/WorkoutSetList";
 import { Button } from "@presentation/components/ui/Button";
 import { Icon } from "@presentation/components/ui/Icon";
 import { useExercises } from "@presentation/hooks/useExercises";
@@ -9,32 +13,23 @@ import { useAppServices } from "@presentation/providers/AppServicesProvider";
 import { colors } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
 import { fontFamily, typography } from "@presentation/theme/typography";
-import { MuscleGroup } from "@domain/entities/Exercise";
-import { WorkoutPlanExercise } from "@domain/entities/WorkoutPlanExercise";
+import { Exercise, MuscleGroup } from "@domain/entities/Exercise";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-interface ExerciseConfig {
-  sets: number;
-  reps: number;
-  loadKg: number;
-  seatHeight: number | null;
-  seatDistance: number | null;
-  seatIncline: number | null;
-  seatLock: number | null;
-}
+type ExerciseConfig = WorkoutExerciseFormValues;
 
-const DEFAULT_CONFIG: ExerciseConfig = {
-  sets: 3,
-  reps: 10,
-  loadKg: 0,
-  seatHeight: null,
-  seatDistance: null,
-  seatIncline: null,
-  seatLock: null,
-};
+function defaultConfigFor(exercise: Exercise | undefined): ExerciseConfig {
+  return {
+    sets: defaultSetsFor(exercise),
+    seatHeight: null,
+    seatDistance: null,
+    seatIncline: null,
+    seatLock: null,
+  };
+}
 const TOTAL_STEPS = 2;
 
 export default function NovoTreinoScreen() {
@@ -63,7 +58,9 @@ export default function NovoTreinoScreen() {
         : [...current, exerciseId],
     );
     setConfigs((current) =>
-      current[exerciseId] ? current : { ...current, [exerciseId]: DEFAULT_CONFIG },
+      current[exerciseId]
+        ? current
+        : { ...current, [exerciseId]: defaultConfigFor(exercisesById.get(exerciseId)) },
     );
   }
 
@@ -74,7 +71,10 @@ export default function NovoTreinoScreen() {
   function updateConfig(exerciseId: string, patch: Partial<ExerciseConfig>) {
     setConfigs((current) => ({
       ...current,
-      [exerciseId]: { ...(current[exerciseId] ?? DEFAULT_CONFIG), ...patch },
+      [exerciseId]: {
+        ...(current[exerciseId] ?? defaultConfigFor(exercisesById.get(exerciseId))),
+        ...patch,
+      },
     }));
   }
 
@@ -103,13 +103,12 @@ export default function NovoTreinoScreen() {
         name: name.trim(),
       });
       for (const exerciseId of selectedExerciseIds) {
-        const config = configs[exerciseId] ?? DEFAULT_CONFIG;
+        const exercise = exercisesById.get(exerciseId);
+        const config = configs[exerciseId] ?? defaultConfigFor(exercise);
         await services.workoutPlans.addExercise.execute({
           workoutPlanId: plan.id,
           exerciseId,
-          sets: config.sets,
-          reps: config.reps,
-          loadKg: config.loadKg,
+          sets: conformSets(config.sets, exercise),
           seatHeight: config.seatHeight,
           seatDistance: config.seatDistance,
           seatIncline: config.seatIncline,
@@ -175,7 +174,6 @@ export default function NovoTreinoScreen() {
               </Text>
             </View>
 
-
             <View style={styles.catalogList}>
               {searchResults.map((exercise) => (
                 <ExerciseCatalogItem
@@ -190,28 +188,21 @@ export default function NovoTreinoScreen() {
         ) : (
           <>
             <Text style={styles.hint}>
-              Defina séries, repetições, peso e regulagens para cada exercício antes de
-              salvar o treino.
+              Defina as séries (repetições ou tempo e peso de cada uma) e as regulagens para cada
+              exercício antes de salvar o treino.
             </Text>
 
             <View style={styles.exercisesList}>
               {selectedExerciseIds.map((exerciseId, index) => {
-                const config = configs[exerciseId] ?? DEFAULT_CONFIG;
-                const planExercise = WorkoutPlanExercise.restore({
-                  id: exerciseId,
-                  exerciseId,
-                  order: index,
-                  ...config,
-                });
+                const config =
+                  configs[exerciseId] ?? defaultConfigFor(exercisesById.get(exerciseId));
                 return (
                   <WorkoutExerciseFormRow
                     key={exerciseId}
                     order={index + 1}
                     exercise={exercisesById.get(exerciseId)}
-                    planExercise={planExercise}
-                    onChangeSets={(value) => updateConfig(exerciseId, { sets: value })}
-                    onChangeReps={(value) => updateConfig(exerciseId, { reps: value })}
-                    onChangeLoad={(value) => updateConfig(exerciseId, { loadKg: value })}
+                    planExercise={config}
+                    onChangeSets={(sets) => updateConfig(exerciseId, { sets })}
                     onChangeSeatHeight={(value) => updateConfig(exerciseId, { seatHeight: value })}
                     onChangeSeatDistance={(value) =>
                       updateConfig(exerciseId, { seatDistance: value })
@@ -290,7 +281,7 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semiBold,
     fontSize: 16,
     color: colors.textPrimary,
-    marginBottom: spacing.lg
+    marginBottom: spacing.lg,
   },
   hint: { ...typography.body, color: colors.textSecondary },
   searchRow: {

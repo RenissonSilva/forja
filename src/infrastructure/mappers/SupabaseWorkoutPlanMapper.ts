@@ -1,5 +1,6 @@
 import { WorkoutPlan, WorkoutPlanColorTag } from "@domain/entities/WorkoutPlan";
-import { WorkoutPlanExercise } from "@domain/entities/WorkoutPlanExercise";
+import { WorkoutPlanExercise, WorkoutSet } from "@domain/entities/WorkoutPlanExercise";
+import { SupabaseSetDetail, setFromDetail, setToDetail } from "./SupabaseSetDetailMapper";
 
 export interface SupabaseWorkoutPlanRow {
   id: string;
@@ -22,10 +23,19 @@ export interface SupabaseWorkoutPlanExerciseRow {
   sets: number;
   reps: number;
   load_kg: number;
+  /** Null on rows saved before per-set targets existed. */
+  set_details: SupabaseSetDetail[] | null;
   seat_height: number | null;
   seat_distance: number | null;
   seat_incline: number | null;
   seat_lock: number | null;
+}
+
+function setsFromRow(row: SupabaseWorkoutPlanExerciseRow): WorkoutSet[] {
+  if (row.set_details) {
+    return row.set_details.map(setFromDetail);
+  }
+  return Array.from({ length: row.sets }, () => ({ reps: row.reps, loadKg: Number(row.load_kg) }));
 }
 
 export class SupabaseWorkoutPlanMapper {
@@ -41,9 +51,7 @@ export class SupabaseWorkoutPlanMapper {
           id: row.id,
           exerciseId: row.exercise_id,
           order: row.order_index,
-          sets: row.sets,
-          reps: row.reps,
-          loadKg: row.load_kg,
+          sets: setsFromRow(row),
           seatHeight: row.seat_height,
           seatDistance: row.seat_distance,
           seatIncline: row.seat_incline,
@@ -88,9 +96,11 @@ export class SupabaseWorkoutPlanMapper {
         profile_id: plan.profileId,
         exercise_id: props.exerciseId,
         order_index: props.order,
-        sets: props.sets,
-        reps: props.reps,
-        load_kg: props.loadKg,
+        // Summary columns kept in sync for older app versions reading this row.
+        sets: props.sets.length,
+        reps: props.sets[0]?.reps ?? 0,
+        load_kg: Math.max(...props.sets.map((set) => set.loadKg)),
+        set_details: props.sets.map(setToDetail),
         seat_height: props.seatHeight,
         seat_distance: props.seatDistance,
         seat_incline: props.seatIncline,

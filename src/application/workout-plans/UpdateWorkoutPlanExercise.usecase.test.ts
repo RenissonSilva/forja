@@ -16,9 +16,7 @@ async function seedPlanWithExercise(repository: InMemoryWorkoutPlanRepository) {
     id: "wpe-1",
     exerciseId: "exercise-1",
     order: 0,
-    sets: 4,
-    reps: 10,
-    loadKg: 60,
+    sets: Array.from({ length: 4 }, () => ({ reps: 10, loadKg: 60 })),
     seatHeight: null,
     seatDistance: null,
     seatIncline: null,
@@ -38,13 +36,31 @@ describe("UpdateWorkoutPlanExerciseUseCase", () => {
     const updated = await useCase.execute({
       workoutPlanId: "plan-1",
       workoutPlanExerciseId: "wpe-1",
-      loadKg: 65,
+      seatHeight: 3,
     });
 
     const exercise = updated.exercises[0];
-    expect(exercise?.loadKg).toBe(65);
-    expect(exercise?.sets).toBe(4);
-    expect(exercise?.reps).toBe(10);
+    expect(exercise?.seatHeight).toBe(3);
+    expect(exercise?.sets).toHaveLength(4);
+    expect(exercise?.sets[0]).toEqual({ reps: 10, loadKg: 60 });
+  });
+
+  it("replaces the sets with the provided per-set values", async () => {
+    const repository = new InMemoryWorkoutPlanRepository();
+    await seedPlanWithExercise(repository);
+    const useCase = new UpdateWorkoutPlanExerciseUseCase(repository);
+
+    const sets = [
+      { reps: 12, loadKg: 60 },
+      { reps: 8, loadKg: 70 },
+    ];
+    const updated = await useCase.execute({
+      workoutPlanId: "plan-1",
+      workoutPlanExerciseId: "wpe-1",
+      sets,
+    });
+
+    expect(updated.exercises[0]?.sets).toEqual(sets);
   });
 
   it("fails when the workout plan does not exist", async () => {
@@ -52,7 +68,7 @@ describe("UpdateWorkoutPlanExerciseUseCase", () => {
     const useCase = new UpdateWorkoutPlanExerciseUseCase(repository);
 
     await expect(
-      useCase.execute({ workoutPlanId: "missing", workoutPlanExerciseId: "wpe-1", sets: 5 }),
+      useCase.execute({ workoutPlanId: "missing", workoutPlanExerciseId: "wpe-1", seatLock: 1 }),
     ).rejects.toThrow();
   });
 
@@ -62,7 +78,7 @@ describe("UpdateWorkoutPlanExerciseUseCase", () => {
     const useCase = new UpdateWorkoutPlanExerciseUseCase(repository);
 
     await expect(
-      useCase.execute({ workoutPlanId: "plan-1", workoutPlanExerciseId: "missing", sets: 5 }),
+      useCase.execute({ workoutPlanId: "plan-1", workoutPlanExerciseId: "missing", seatLock: 1 }),
     ).rejects.toThrow();
   });
 
@@ -72,10 +88,14 @@ describe("UpdateWorkoutPlanExerciseUseCase", () => {
     const useCase = new UpdateWorkoutPlanExerciseUseCase(repository);
 
     await expect(
-      useCase.execute({ workoutPlanId: "plan-1", workoutPlanExerciseId: "wpe-1", sets: 99 }),
+      useCase.execute({
+        workoutPlanId: "plan-1",
+        workoutPlanExerciseId: "wpe-1",
+        sets: [{ reps: 0, loadKg: 60 }],
+      }),
     ).rejects.toThrow();
 
     const stored = await repository.findById("plan-1");
-    expect(stored?.exercises[0]?.sets).toBe(4);
+    expect(stored?.exercises[0]?.sets).toHaveLength(4);
   });
 });

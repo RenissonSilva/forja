@@ -1,13 +1,29 @@
-import { InvalidLoadError, InvalidRepsError, InvalidSetsError } from "../errors/WorkoutPlanErrors";
+import {
+  InvalidDurationError,
+  InvalidLoadError,
+  InvalidRepsError,
+  InvalidSetsError,
+} from "../errors/WorkoutPlanErrors";
+import { MAX_DURATION_SECONDS } from "@shared/duration";
 import { Result, err, ok } from "@shared/result";
+
+/**
+ * Target for one set — reps and load can differ from set to set. Timed sets
+ * (core, cardio) carry `durationSeconds` instead, and their reps are ignored.
+ */
+export interface WorkoutSet {
+  reps: number;
+  loadKg: number;
+  durationSeconds?: number;
+}
+
+export const MAX_SETS = 20;
 
 export interface WorkoutPlanExerciseProps {
   id: string;
   exerciseId: string;
   order: number;
-  sets: number;
-  reps: number;
-  loadKg: number;
+  sets: WorkoutSet[];
   seatHeight: number | null;
   seatDistance: number | null;
   seatIncline: number | null;
@@ -15,7 +31,7 @@ export interface WorkoutPlanExerciseProps {
 }
 
 export type WorkoutPlanExerciseValidationError =
-  InvalidSetsError | InvalidRepsError | InvalidLoadError;
+  InvalidSetsError | InvalidRepsError | InvalidDurationError | InvalidLoadError;
 
 export class WorkoutPlanExercise {
   private constructor(private readonly props: WorkoutPlanExerciseProps) {}
@@ -23,17 +39,24 @@ export class WorkoutPlanExercise {
   static create(
     props: WorkoutPlanExerciseProps,
   ): Result<WorkoutPlanExercise, WorkoutPlanExerciseValidationError> {
-    if (!Number.isInteger(props.sets) || props.sets < 1 || props.sets > 20) {
-      return err(new InvalidSetsError(props.sets));
+    if (props.sets.length < 1 || props.sets.length > MAX_SETS) {
+      return err(new InvalidSetsError(props.sets.length));
     }
-    if (!Number.isInteger(props.reps) || props.reps < 1 || props.reps > 100) {
-      return err(new InvalidRepsError(props.reps));
-    }
-    if (!Number.isFinite(props.loadKg) || props.loadKg < 0 || props.loadKg > 500) {
-      return err(new InvalidLoadError(props.loadKg));
+    for (const set of props.sets) {
+      if (set.durationSeconds !== undefined) {
+        const duration = set.durationSeconds;
+        if (!Number.isInteger(duration) || duration < 1 || duration > MAX_DURATION_SECONDS) {
+          return err(new InvalidDurationError(duration));
+        }
+      } else if (!Number.isInteger(set.reps) || set.reps < 1 || set.reps > 100) {
+        return err(new InvalidRepsError(set.reps));
+      }
+      if (!Number.isFinite(set.loadKg) || set.loadKg < 0 || set.loadKg > 500) {
+        return err(new InvalidLoadError(set.loadKg));
+      }
     }
 
-    return ok(new WorkoutPlanExercise({ ...props }));
+    return ok(new WorkoutPlanExercise({ ...props, sets: props.sets.map((set) => ({ ...set })) }));
   }
 
   static restore(props: WorkoutPlanExerciseProps): WorkoutPlanExercise {
@@ -56,16 +79,8 @@ export class WorkoutPlanExercise {
     return this.props.order;
   }
 
-  get sets(): number {
+  get sets(): readonly WorkoutSet[] {
     return this.props.sets;
-  }
-
-  get reps(): number {
-    return this.props.reps;
-  }
-
-  get loadKg(): number {
-    return this.props.loadKg;
   }
 
   get seatHeight(): number | null {
@@ -85,6 +100,6 @@ export class WorkoutPlanExercise {
   }
 
   toProps(): WorkoutPlanExerciseProps {
-    return { ...this.props };
+    return { ...this.props, sets: this.props.sets.map((set) => ({ ...set })) };
   }
 }

@@ -1,4 +1,5 @@
 import { Icon, IconName } from "@presentation/components/ui/Icon";
+import { useResumeActiveWorkout } from "@presentation/hooks/useResumeActiveWorkout";
 import { colors } from "@presentation/theme/colors";
 import { fontFamily } from "@presentation/theme/typography";
 import { Tabs } from "expo-router";
@@ -6,6 +7,8 @@ import React from "react";
 import { ColorValue, Text } from "react-native";
 
 export default function TabsLayout() {
+  useResumeActiveWorkout();
+
   return (
     <Tabs
       screenOptions={{

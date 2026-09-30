@@ -26,8 +26,6 @@ export class UpdateWorkoutPlanExerciseUseCase {
     const updatedResult = WorkoutPlanExercise.create({
       ...currentProps,
       sets: input.sets ?? currentProps.sets,
-      reps: input.reps ?? currentProps.reps,
-      loadKg: input.loadKg ?? currentProps.loadKg,
       seatHeight: input.seatHeight !== undefined ? input.seatHeight : currentProps.seatHeight,
       seatDistance:
         input.seatDistance !== undefined ? input.seatDistance : currentProps.seatDistance,

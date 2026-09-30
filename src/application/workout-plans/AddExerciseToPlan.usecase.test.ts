@@ -37,9 +37,7 @@ describe("AddExerciseToPlanUseCase", () => {
     const updated = await useCase.execute({
       workoutPlanId: "plan-1",
       exerciseId: "exercise-1",
-      sets: 4,
-      reps: 10,
-      loadKg: 60,
+      sets: Array.from({ length: 4 }, () => ({ reps: 10, loadKg: 60 })),
     });
 
     expect(updated.exercises).toHaveLength(1);
@@ -55,9 +53,7 @@ describe("AddExerciseToPlanUseCase", () => {
       useCase.execute({
         workoutPlanId: "missing",
         exerciseId: "exercise-1",
-        sets: 4,
-        reps: 10,
-        loadKg: 60,
+        sets: Array.from({ length: 4 }, () => ({ reps: 10, loadKg: 60 })),
       }),
     ).rejects.toThrow();
   });
@@ -70,9 +66,7 @@ describe("AddExerciseToPlanUseCase", () => {
       useCase.execute({
         workoutPlanId: "plan-1",
         exerciseId: "missing",
-        sets: 4,
-        reps: 10,
-        loadKg: 60,
+        sets: Array.from({ length: 4 }, () => ({ reps: 10, loadKg: 60 })),
       }),
     ).rejects.toThrow();
   });
@@ -85,9 +79,7 @@ describe("AddExerciseToPlanUseCase", () => {
       useCase.execute({
         workoutPlanId: "plan-1",
         exerciseId: "exercise-1",
-        sets: 99,
-        reps: 10,
-        loadKg: 60,
+        sets: Array.from({ length: 99 }, () => ({ reps: 10, loadKg: 60 })),
       }),
     ).rejects.toThrow();
 

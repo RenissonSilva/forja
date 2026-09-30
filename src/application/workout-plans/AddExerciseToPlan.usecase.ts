@@ -26,8 +26,6 @@ export class AddExerciseToPlanUseCase {
       exerciseId: input.exerciseId,
       order: 0,
       sets: input.sets,
-      reps: input.reps,
-      loadKg: input.loadKg,
       seatHeight: input.seatHeight ?? null,
       seatDistance: input.seatDistance ?? null,
       seatIncline: input.seatIncline ?? null,

@@ -5,12 +5,11 @@ import { colors } from "../../theme/colors";
 import { muscleGroupLabels } from "../../theme/muscleGroups";
 import { fontFamily } from "../../theme/typography";
 import { Icon } from "../ui/Icon";
-import { Stepper } from "../ui/Stepper";
+import { ExerciseHelpButton } from "./ExerciseHelpButton";
+import { WorkoutSetList, WorkoutSetValues } from "./WorkoutSetList";
 
 export interface WorkoutExerciseFormValues {
-  sets: number;
-  reps: number;
-  loadKg: number;
+  sets: readonly WorkoutSetValues[];
   seatHeight: number | null;
   seatDistance: number | null;
   seatIncline: number | null;
@@ -21,15 +20,15 @@ interface WorkoutExerciseFormRowProps {
   order?: number;
   exercise: Exercise | undefined;
   planExercise: WorkoutExerciseFormValues;
-  onChangeSets: (value: number) => void;
-  onChangeReps: (value: number) => void;
-  onChangeLoad: (value: number) => void;
+  onChangeSets: (sets: WorkoutSetValues[]) => void;
   onChangeSeatHeight: (value: number | null) => void;
   onChangeSeatDistance: (value: number | null) => void;
   onChangeSeatIncline: (value: number | null) => void;
   onChangeSeatLock: (value: number | null) => void;
   onRemove?: () => void;
   hideHeader?: boolean;
+  /** Hides the per-set list when the sets are edited elsewhere (e.g. during a session). */
+  hideSets?: boolean;
 }
 
 function parseSeatValue(text: string): number | null {
@@ -44,14 +43,13 @@ export function WorkoutExerciseFormRow({
   exercise,
   planExercise,
   onChangeSets,
-  onChangeReps,
-  onChangeLoad,
   onChangeSeatHeight,
   onChangeSeatDistance,
   onChangeSeatIncline,
   onChangeSeatLock,
   onRemove,
   hideHeader = false,
+  hideSets = false,
 }: WorkoutExerciseFormRowProps) {
   return (
     <View style={hideHeader ? styles.bareContainer : styles.container}>
@@ -66,6 +64,13 @@ export function WorkoutExerciseFormRow({
               <Text style={styles.group}>{muscleGroupLabels[exercise.muscleGroup]}</Text>
             ) : null}
           </View>
+          {exercise ? (
+            <ExerciseHelpButton
+              exerciseName={exercise.name}
+              isCustom={exercise.isCustom}
+              size={26}
+            />
+          ) : null}
           {onRemove ? (
             <Pressable
               accessibilityRole="button"
@@ -79,24 +84,9 @@ export function WorkoutExerciseFormRow({
         </View>
       )}
 
-      <View style={styles.steppersRow}>
-        <Stepper
-          label="SÉRIES"
-          value={planExercise.sets}
-          min={1}
-          max={20}
-          onChange={onChangeSets}
-        />
-        <Stepper label="REPS" value={planExercise.reps} min={1} max={100} onChange={onChangeReps} />
-        <Stepper
-          label="PESO KG"
-          value={planExercise.loadKg}
-          min={0}
-          max={500}
-          step={2.5}
-          onChange={onChangeLoad}
-        />
-      </View>
+      {hideSets ? null : (
+        <WorkoutSetList sets={planExercise.sets} exercise={exercise} onChange={onChangeSets} />
+      )}
 
       <View style={styles.seatSection}>
         <Text style={styles.seatLabel}>
@@ -188,7 +178,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  steppersRow: { flexDirection: "row", gap: 8 },
   seatSection: {
     paddingTop: 12,
     borderTopWidth: 1,

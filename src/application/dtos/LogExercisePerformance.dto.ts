@@ -6,9 +6,13 @@ export const logExercisePerformanceSchema = z.object({
   entries: z.array(
     z.object({
       exerciseId: z.string().min(1),
-      sets: z.coerce.number().int(),
-      reps: z.coerce.number().int(),
-      loadKg: z.coerce.number(),
+      sets: z.array(
+        z.object({
+          reps: z.coerce.number().int(),
+          loadKg: z.coerce.number(),
+          durationSeconds: z.coerce.number().int().optional(),
+        }),
+      ),
     }),
   ),
 });

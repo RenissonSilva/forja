@@ -3,18 +3,18 @@ import { Icon } from "@presentation/components/ui/Icon";
 import { ProgressBar } from "@presentation/components/ui/ProgressBar";
 import { MonthCalendar } from "@presentation/components/features/MonthCalendar";
 import { MuscleGroupStatsChart } from "@presentation/components/features/MuscleGroupStatsChart";
-import { ExercisePerformanceChart } from "@presentation/components/features/ExercisePerformanceChart";
+import { ExerciseProgressOverview } from "@presentation/components/features/ExerciseProgressOverview";
 import { useMonthlyOverview } from "@presentation/hooks/useMonthlyOverview";
 import { useMuscleGroupStats } from "@presentation/hooks/useMuscleGroupStats";
-import { useExercisePerformanceHistory } from "@presentation/hooks/useExercisePerformanceHistory";
-import { useExercises } from "@presentation/hooks/useExercises";
+import { useExerciseProgress } from "@presentation/hooks/useExerciseProgress";
 import { useProfile } from "@presentation/hooks/useProfile";
 import { colors } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
 import { fontFamily, typography } from "@presentation/theme/typography";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import React, { useMemo } from "react";
+import { router } from "expo-router";
+import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -23,12 +23,8 @@ export default function HistoricoScreen() {
   const { referenceDate, days, goalProgress, goToPreviousMonth, goToNextMonth } =
     useMonthlyOverview(profile?.id);
   const { stats: muscleGroupStats } = useMuscleGroupStats(profile?.id);
-  const { entries: exercisePerformance } = useExercisePerformanceHistory(profile?.id);
-  const { exercises: allExercises } = useExercises("");
-
-  const exercisesById = useMemo(
-    () => new Map(allExercises.map((exercise) => [exercise.id, exercise])),
-    [allExercises],
+  const { items: exerciseProgress, isLoading: isExerciseProgressLoading } = useExerciseProgress(
+    profile?.id,
   );
 
   if (!profile) return null;
@@ -85,7 +81,12 @@ export default function HistoricoScreen() {
         </Card>
 
         <Card>
-          <ExercisePerformanceChart history={exercisePerformance} exercisesById={exercisesById} />
+          <ExerciseProgressOverview
+            items={exerciseProgress}
+            isLoading={isExerciseProgressLoading}
+            onOpenExercise={(exerciseId) => router.push(`/progresso/${exerciseId}`)}
+            onSeeAll={() => router.push("/progresso")}
+          />
         </Card>
       </ScrollView>
     </SafeAreaView>

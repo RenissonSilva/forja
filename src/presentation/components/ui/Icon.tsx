@@ -21,6 +21,7 @@ export type IconName =
   | "pencil"
   | "grip"
   | "ruler"
+  | "help-circle"
   | "x";
 
 interface IconProps {
@@ -256,6 +257,20 @@ export function Icon({
             strokeWidth={strokeWidth}
             strokeLinecap="round"
           />
+        </Svg>
+      );
+    case "help-circle":
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <Circle cx={12} cy={12} r={8.5} stroke={color} strokeWidth={strokeWidth} />
+          <Path
+            d="M9.5 9.5a2.5 2.5 0 114 2c-.6.5-1.5 1-1.5 2.2"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <Circle cx={12} cy={17} r={0.9} fill={color} />
         </Svg>
       );
     case "x":

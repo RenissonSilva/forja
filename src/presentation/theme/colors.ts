@@ -35,6 +35,9 @@ export const colors = {
   successMuted: "rgba(95,174,122,0.14)",
   successBorder: "rgba(95,174,122,0.4)",
   danger: "#B5484B",
+  /** Brighter than `danger` so small text stays readable on dark surfaces. */
+  dangerText: "#E0676A",
+  dangerMuted: "rgba(224,103,106,0.14)",
 } as const;
 
 export const workoutPlanColors: Record<WorkoutPlanColorTag, string> = {

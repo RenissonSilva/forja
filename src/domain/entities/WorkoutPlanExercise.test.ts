@@ -4,9 +4,7 @@ const baseProps = {
   id: "wpe-1",
   exerciseId: "ex-1",
   order: 0,
-  sets: 4,
-  reps: 10,
-  loadKg: 60,
+  sets: Array.from({ length: 4 }, () => ({ reps: 10, loadKg: 60 })),
   seatHeight: null,
   seatDistance: null,
   seatIncline: null,
@@ -36,19 +34,54 @@ describe("WorkoutPlanExercise.create", () => {
     }
   });
 
-  it.each([0, 21, 1.5])("rejects an invalid sets count (%s)", (sets) => {
+  it("keeps each set's reps and load individually", () => {
+    const sets = [
+      { reps: 12, loadKg: 40 },
+      { reps: 10, loadKg: 45 },
+      { reps: 8, loadKg: 50 },
+    ];
+    const result = WorkoutPlanExercise.create({ ...baseProps, sets });
+    expect(result.ok && result.value.sets).toEqual(sets);
+  });
+
+  it.each([0, 21])("rejects an invalid sets count (%s)", (count) => {
+    const sets = Array.from({ length: count }, () => ({ reps: 10, loadKg: 60 }));
     expect(WorkoutPlanExercise.create({ ...baseProps, sets }).ok).toBe(false);
   });
 
-  it.each([0, 101])("rejects an invalid reps count (%s)", (reps) => {
-    expect(WorkoutPlanExercise.create({ ...baseProps, reps }).ok).toBe(false);
+  it.each([0, 101, 1.5])("rejects an invalid reps count in any set (%s)", (reps) => {
+    const sets = [
+      { reps: 10, loadKg: 60 },
+      { reps, loadKg: 60 },
+    ];
+    expect(WorkoutPlanExercise.create({ ...baseProps, sets }).ok).toBe(false);
   });
 
-  it.each([-1, 501])("rejects an invalid load (%s)", (loadKg) => {
-    expect(WorkoutPlanExercise.create({ ...baseProps, loadKg }).ok).toBe(false);
+  it.each([-1, 501])("rejects an invalid load in any set (%s)", (loadKg) => {
+    const sets = [
+      { reps: 10, loadKg: 60 },
+      { reps: 10, loadKg },
+    ];
+    expect(WorkoutPlanExercise.create({ ...baseProps, sets }).ok).toBe(false);
   });
 
   it("accepts a zero load (bodyweight exercises)", () => {
-    expect(WorkoutPlanExercise.create({ ...baseProps, loadKg: 0 }).ok).toBe(true);
+    const sets = [{ reps: 10, loadKg: 0 }];
+    expect(WorkoutPlanExercise.create({ ...baseProps, sets }).ok).toBe(true);
+  });
+
+  it("accepts timed sets without reps (core, cardio)", () => {
+    const sets = [{ reps: 0, loadKg: 0, durationSeconds: 45 }];
+    const result = WorkoutPlanExercise.create({ ...baseProps, sets });
+    expect(result.ok && result.value.sets).toEqual(sets);
+  });
+
+  it.each([0, 6000, 1.5])("rejects an invalid duration in any set (%s)", (durationSeconds) => {
+    const sets = [
+      { reps: 0, loadKg: 0, durationSeconds: 30 },
+      { reps: 0, loadKg: 0, durationSeconds },
+    ];
+    const result = WorkoutPlanExercise.create({ ...baseProps, sets });
+    expect(!result.ok && result.error.code).toBe("INVALID_DURATION");
   });
 });

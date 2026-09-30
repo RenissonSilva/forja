@@ -4,16 +4,24 @@ import {
   WorkoutExerciseFormRow,
   WorkoutExerciseFormValues,
 } from "@presentation/components/features/WorkoutExerciseFormRow";
+import {
+  WorkoutSetList,
+  WorkoutSetValues,
+  conformSets,
+} from "@presentation/components/features/WorkoutSetList";
+import { useExercisePerformanceHistory } from "@presentation/hooks/useExercisePerformanceHistory";
 import { useExercises } from "@presentation/hooks/useExercises";
 import { useProfile } from "@presentation/hooks/useProfile";
 import { useWorkoutPlan } from "@presentation/hooks/useWorkoutPlan";
 import { useAppServices } from "@presentation/providers/AppServicesProvider";
+import { useActiveWorkoutStore } from "@presentation/stores/activeWorkoutStore";
 import { colors } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
 import { fontFamily, typography } from "@presentation/theme/typography";
+import { Exercise } from "@domain/entities/Exercise";
 import { WorkoutPlanExercise } from "@domain/entities/WorkoutPlanExercise";
-import { router, useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { toast } from "sonner-native";
@@ -36,43 +44,94 @@ function formatSeatAdjustments(planExercise: SeatAdjustments): string {
   return parts.length > 0 ? ` · ${parts.join(" · ")}` : "";
 }
 
+/**
+ * Starts each set from what was lifted in the last session for this exercise,
+ * so the load progression carries over; falls back to the plan's values.
+ */
+function initialSets(
+  planExercise: WorkoutPlanExercise,
+  lastSets: readonly WorkoutSetValues[] | undefined,
+  exercise: Exercise | undefined,
+): WorkoutSetValues[] {
+  const sets = planExercise.sets.map((planned, index) => {
+    const previous = lastSets?.[index] ?? lastSets?.[lastSets.length - 1];
+    return { ...(previous ?? planned) };
+  });
+  return conformSets(sets, exercise);
+}
+
 export default function SessaoTreinoScreen() {
   const { fichaId } = useLocalSearchParams<{ fichaId: string }>();
   const { plan, updateExercise } = useWorkoutPlan(fichaId);
   const { profile } = useProfile();
   const services = useAppServices();
   const { exercises: allExercises } = useExercises("");
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [drafts, setDrafts] = useState<Record<string, WorkoutExerciseFormValues>>({});
+  const { entries: history } = useExercisePerformanceHistory(profile?.id);
+  const navigation = useNavigation();
+  const session = useActiveWorkoutStore((state) => state.session);
+  const startSession = useActiveWorkoutStore((state) => state.start);
+  const updateSession = useActiveWorkoutStore((state) => state.update);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
+
+  // The session lives in a persisted store so it survives Android killing the
+  // app in the background; a session for another plan or user starts over.
+  const current =
+    session && session.fichaId === fichaId && session.profileId === profile?.id ? session : null;
+  const completedIds = useMemo(() => new Set(current?.completedIds ?? []), [current?.completedIds]);
+  const sessionSets = current?.sessionSets ?? {};
+  const drafts = current?.drafts ?? {};
+  const expandedId = current?.expandedId ?? null;
+
+  useEffect(() => {
+    if (profile && !current) startSession(fichaId, profile.id);
+  }, [profile, current, fichaId, startSession]);
+
+  // Leaving the screen (close, back, finishing) ends the session for good.
+  useEffect(
+    () =>
+      navigation.addListener("beforeRemove", () => useActiveWorkoutStore.getState().clear()),
+    [navigation],
+  );
 
   const exercisesById = useMemo(
     () => new Map(allExercises.map((exercise) => [exercise.id, exercise])),
     [allExercises],
   );
 
+  // History is ordered by date ascending, so the last write per exercise wins.
+  const lastSetsByExerciseId = useMemo(
+    () => new Map(history.map((entry) => [entry.exerciseId, entry.setDetails])),
+    [history],
+  );
+
   if (!plan || !profile) return null;
 
+  function setsFor(planExercise: WorkoutPlanExercise): WorkoutSetValues[] {
+    const exercise = exercisesById.get(planExercise.exerciseId);
+    return (
+      sessionSets[planExercise.id] ??
+      initialSets(planExercise, lastSetsByExerciseId.get(planExercise.exerciseId), exercise)
+    );
+  }
+
   function toggleExercise(workoutPlanExerciseId: string) {
-    setCompletedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(workoutPlanExerciseId)) next.delete(workoutPlanExerciseId);
-      else next.add(workoutPlanExerciseId);
-      return next;
-    });
+    updateSession((prev) => ({
+      completedIds: prev.completedIds.includes(workoutPlanExerciseId)
+        ? prev.completedIds.filter((id) => id !== workoutPlanExerciseId)
+        : [...prev.completedIds, workoutPlanExerciseId],
+    }));
   }
 
   function toggleExpanded(workoutPlanExerciseId: string) {
-    setExpandedId((prev) => (prev === workoutPlanExerciseId ? null : workoutPlanExerciseId));
+    updateSession((prev) => ({
+      expandedId: prev.expandedId === workoutPlanExerciseId ? null : workoutPlanExerciseId,
+    }));
   }
 
   function toDraftValues(planExercise: WorkoutPlanExercise): WorkoutExerciseFormValues {
     return {
       sets: planExercise.sets,
-      reps: planExercise.reps,
-      loadKg: planExercise.loadKg,
       seatHeight: planExercise.seatHeight,
       seatDistance: planExercise.seatDistance,
       seatIncline: planExercise.seatIncline,
@@ -80,28 +139,33 @@ export default function SessaoTreinoScreen() {
     };
   }
 
-  function updateDraft(planExercise: WorkoutPlanExercise, patch: Partial<WorkoutExerciseFormValues>) {
-    setDrafts((prev) => ({
-      ...prev,
-      [planExercise.id]: { ...(prev[planExercise.id] ?? toDraftValues(planExercise)), ...patch },
+  function updateDraft(
+    planExercise: WorkoutPlanExercise,
+    patch: Partial<WorkoutExerciseFormValues>,
+  ) {
+    updateSession((prev) => ({
+      drafts: {
+        ...prev.drafts,
+        [planExercise.id]: {
+          ...(prev.drafts[planExercise.id] ?? toDraftValues(planExercise)),
+          ...patch,
+        },
+      },
     }));
   }
 
-  async function saveDraft(workoutPlanExerciseId: string) {
-    const draft = drafts[workoutPlanExerciseId];
-    if (!draft) {
-      setExpandedId(null);
-      return;
-    }
+  async function saveDraft(planExercise: WorkoutPlanExercise) {
+    const workoutPlanExerciseId = planExercise.id;
+    const draft = drafts[workoutPlanExerciseId] ?? toDraftValues(planExercise);
     setSavingId(workoutPlanExerciseId);
     try {
-      await updateExercise(workoutPlanExerciseId, draft);
-      setDrafts((prev) => {
-        const next = { ...prev };
-        delete next[workoutPlanExerciseId];
-        return next;
+      // The sets are edited directly in the card, so saving to the plan takes
+      // today's sets along with the seat adjustments from the form.
+      await updateExercise(workoutPlanExerciseId, {
+        ...draft,
+        sets: setsFor(planExercise),
       });
-      setExpandedId(null);
+      discardDraft(workoutPlanExerciseId);
       toast.success("Exercício atualizado");
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Não foi possível salvar o exercício.");
@@ -110,13 +174,12 @@ export default function SessaoTreinoScreen() {
     }
   }
 
-  function cancelDraft(workoutPlanExerciseId: string) {
-    setDrafts((prev) => {
-      const next = { ...prev };
+  function discardDraft(workoutPlanExerciseId: string) {
+    updateSession((prev) => {
+      const next = { ...prev.drafts };
       delete next[workoutPlanExerciseId];
-      return next;
+      return { drafts: next, expandedId: null };
     });
-    setExpandedId(null);
   }
 
   async function handleFinish() {
@@ -127,9 +190,7 @@ export default function SessaoTreinoScreen() {
         .filter((planExercise) => completedIds.has(planExercise.id))
         .map((planExercise) => ({
           exerciseId: planExercise.exerciseId,
-          sets: planExercise.sets,
-          reps: planExercise.reps,
-          loadKg: planExercise.loadKg,
+          sets: setsFor(planExercise),
         }));
 
       await Promise.all([
@@ -173,10 +234,14 @@ export default function SessaoTreinoScreen() {
         <View style={styles.list}>
           {plan.exercises.map((planExercise, index) => {
             const exercise = exercisesById.get(planExercise.exerciseId);
+            const sets = setsFor(planExercise);
             const done = completedIds.has(planExercise.id);
             const expanded = expandedId === planExercise.id;
             return (
-              <View style={[styles.exerciseCard, done && styles.exerciseCardDone]} key={planExercise.id}>
+              <View
+                style={[styles.exerciseCard, done && styles.exerciseCardDone]}
+                key={planExercise.id}
+              >
                 <Pressable
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: done }}
@@ -193,7 +258,7 @@ export default function SessaoTreinoScreen() {
                       {index + 1}. {exercise?.name ?? "Exercício"}
                     </Text>
                     <Text style={styles.exerciseMeta}>
-                      {planExercise.sets} séries · {planExercise.reps} reps · {planExercise.loadKg} kg
+                      {sets.length} {sets.length === 1 ? "série" : "séries"}
                       {formatSeatAdjustments(planExercise)}
                     </Text>
                   </View>
@@ -213,6 +278,18 @@ export default function SessaoTreinoScreen() {
                   </Pressable>
                 </Pressable>
 
+                <View style={styles.setList}>
+                  <WorkoutSetList
+                    sets={sets}
+                    exercise={exercise}
+                    onChange={(next) =>
+                      updateSession((prev) => ({
+                        sessionSets: { ...prev.sessionSets, [planExercise.id]: next },
+                      }))
+                    }
+                  />
+                </View>
+
                 {expanded
                   ? (() => {
                       const draft = drafts[planExercise.id] ?? planExercise;
@@ -223,9 +300,8 @@ export default function SessaoTreinoScreen() {
                             exercise={exercise}
                             planExercise={draft}
                             hideHeader
-                            onChangeSets={(value) => updateDraft(planExercise, { sets: value })}
-                            onChangeReps={(value) => updateDraft(planExercise, { reps: value })}
-                            onChangeLoad={(value) => updateDraft(planExercise, { loadKg: value })}
+                            hideSets
+                            onChangeSets={(sets) => updateDraft(planExercise, { sets })}
                             onChangeSeatHeight={(value) =>
                               updateDraft(planExercise, { seatHeight: value })
                             }
@@ -244,14 +320,14 @@ export default function SessaoTreinoScreen() {
                               <Button
                                 label="Cancelar"
                                 variant="secondary"
-                                onPress={() => cancelDraft(planExercise.id)}
+                                onPress={() => discardDraft(planExercise.id)}
                                 disabled={savingId === planExercise.id}
                               />
                             </View>
                             <View style={styles.expandedActionButton}>
                               <Button
                                 label="Salvar"
-                                onPress={() => saveDraft(planExercise.id)}
+                                onPress={() => saveDraft(planExercise)}
                                 loading={savingId === planExercise.id}
                               />
                             </View>
@@ -312,6 +388,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   expandButtonOpen: { transform: [{ rotate: "180deg" }] },
+  setList: { gap: 8, paddingHorizontal: 14, paddingBottom: 14 },
   expandedForm: {},
   expandedDivider: { height: 1, backgroundColor: colors.borderSubtle, marginBottom: 14 },
   expandedActions: {

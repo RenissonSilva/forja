@@ -3,6 +3,7 @@ import { Icon } from "@presentation/components/ui/Icon";
 import { ExerciseCatalogItem } from "@presentation/components/features/ExerciseCatalogItem";
 import { MuscleGroupFilter } from "@presentation/components/features/MuscleGroupFilter";
 import { WorkoutExerciseFormRow } from "@presentation/components/features/WorkoutExerciseFormRow";
+import { defaultSetsFor } from "@presentation/components/features/WorkoutSetList";
 import { useExercises } from "@presentation/hooks/useExercises";
 import { useWorkoutPlan } from "@presentation/hooks/useWorkoutPlan";
 import { colors } from "@presentation/theme/colors";
@@ -42,7 +43,9 @@ export default function EditarFichaScreen() {
 
   const planExerciseByExerciseId = useMemo(
     () =>
-      new Map((plan?.exercises ?? []).map((planExercise) => [planExercise.exerciseId, planExercise])),
+      new Map(
+        (plan?.exercises ?? []).map((planExercise) => [planExercise.exerciseId, planExercise]),
+      ),
     [plan],
   );
 
@@ -77,7 +80,10 @@ export default function EditarFichaScreen() {
     if (existing) {
       removeExercise(existing.id);
     } else {
-      addExercise({ exerciseId, sets: 3, reps: 10, loadKg: 0 });
+      addExercise({
+        exerciseId,
+        sets: defaultSetsFor(exercisesById.get(exerciseId)),
+      });
     }
   }
 
@@ -96,7 +102,9 @@ export default function EditarFichaScreen() {
               toast.success("Treino excluído");
               router.back();
             } catch (err: unknown) {
-              toast.error(err instanceof Error ? err.message : "Não foi possível excluir o treino.");
+              toast.error(
+                err instanceof Error ? err.message : "Não foi possível excluir o treino.",
+              );
             }
           },
         },
@@ -120,7 +128,9 @@ export default function EditarFichaScreen() {
           >
             <Icon name="chevron-left" size={15} color={colors.textPrimary} strokeWidth={2.2} />
           </Pressable>
-          <Text style={styles.title}>{mode === "catalog" ? "Alterar exercícios" : "Editar treino"}</Text>
+          <Text style={styles.title}>
+            {mode === "catalog" ? "Alterar exercícios" : "Editar treino"}
+          </Text>
           {mode === "config" ? (
             <View style={styles.headerActions}>
               <Pressable
@@ -166,9 +176,7 @@ export default function EditarFichaScreen() {
                   order={index + 1}
                   exercise={exercisesById.get(planExercise.exerciseId)}
                   planExercise={planExercise}
-                  onChangeSets={(value) => updateExercise(planExercise.id, { sets: value })}
-                  onChangeReps={(value) => updateExercise(planExercise.id, { reps: value })}
-                  onChangeLoad={(value) => updateExercise(planExercise.id, { loadKg: value })}
+                  onChangeSets={(sets) => updateExercise(planExercise.id, { sets })}
                   onChangeSeatHeight={(value) =>
                     updateExercise(planExercise.id, { seatHeight: value })
                   }
@@ -178,9 +186,7 @@ export default function EditarFichaScreen() {
                   onChangeSeatIncline={(value) =>
                     updateExercise(planExercise.id, { seatIncline: value })
                   }
-                  onChangeSeatLock={(value) =>
-                    updateExercise(planExercise.id, { seatLock: value })
-                  }
+                  onChangeSeatLock={(value) => updateExercise(planExercise.id, { seatLock: value })}
                   onRemove={() => removeExercise(planExercise.id)}
                 />
               ))}
