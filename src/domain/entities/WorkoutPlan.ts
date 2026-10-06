@@ -95,6 +95,21 @@ export class WorkoutPlan {
     return ok(new WorkoutPlan({ ...this.props, exercises, updatedAt: now }));
   }
 
+  /**
+   * Puts the exercises in the given order. Ids not in the plan are ignored and
+   * exercises missing from the list keep their relative order at the end, so a
+   * stale list (e.g. one sent while an exercise was being added) can't drop any.
+   */
+  reorderExercises(orderedIds: readonly string[], now: Date = new Date()): WorkoutPlan {
+    const position = new Map(orderedIds.map((id, index) => [id, index]));
+    const rank = (exercise: WorkoutPlanExercise) =>
+      position.get(exercise.id) ?? orderedIds.length + exercise.order;
+    const exercises = [...this.props.exercises]
+      .sort((a, b) => rank(a) - rank(b))
+      .map((exercise, index) => exercise.withOrder(index));
+    return new WorkoutPlan({ ...this.props, exercises, updatedAt: now });
+  }
+
   reorder(order: number, now: Date = new Date()): WorkoutPlan {
     return new WorkoutPlan({ ...this.props, order, updatedAt: now });
   }

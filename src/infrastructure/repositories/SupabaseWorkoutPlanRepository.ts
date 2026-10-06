@@ -84,19 +84,26 @@ export class SupabaseWorkoutPlanRepository implements WorkoutPlanRepository {
     const { error: planError } = await this.client.from("workout_plans").upsert(planRow);
     if (planError) throw planError;
 
-    const { error: deleteError } = await this.client
+    // Write the current exercises before deleting the removed ones: if the write
+    // fails (e.g. a column missing on the server), the plan keeps its exercises
+    // instead of being left empty.
+    const exerciseRows = SupabaseWorkoutPlanMapper.toExerciseRows(plan);
+    if (exerciseRows.length > 0) {
+      const { error: upsertError } = await this.client
+        .from("workout_plan_exercises")
+        .upsert(exerciseRows);
+      if (upsertError) throw upsertError;
+    }
+
+    let deleteQuery = this.client
       .from("workout_plan_exercises")
       .delete()
       .eq("workout_plan_id", plan.id);
-    if (deleteError) throw deleteError;
-
-    const exerciseRows = SupabaseWorkoutPlanMapper.toExerciseRows(plan);
     if (exerciseRows.length > 0) {
-      const { error: insertError } = await this.client
-        .from("workout_plan_exercises")
-        .insert(exerciseRows);
-      if (insertError) throw insertError;
+      deleteQuery = deleteQuery.not("id", "in", `(${exerciseRows.map((row) => row.id).join(",")})`);
     }
+    const { error: deleteError } = await deleteQuery;
+    if (deleteError) throw deleteError;
   }
 
   async delete(id: string): Promise<void> {

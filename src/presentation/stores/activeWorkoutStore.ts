@@ -1,7 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import type { WorkoutExerciseFormValues } from "../components/features/WorkoutExerciseFormRow";
 import type { WorkoutSetValues } from "../components/features/WorkoutSetList";
 
 /** A session older than this is treated as abandoned and not resumed. */
@@ -13,8 +12,10 @@ export interface ActiveWorkoutSession {
   startedAt: number;
   completedIds: string[];
   sessionSets: Record<string, WorkoutSetValues[]>;
-  drafts: Record<string, WorkoutExerciseFormValues>;
-  expandedId: string | null;
+  /** Plan exercises left out of this session only (the plan keeps them). */
+  removedIds?: string[];
+  /** Exercises swapped for this session only: plan exercise id → exercise done instead. */
+  exerciseOverrides?: Record<string, string>;
 }
 
 type SessionPatch = Partial<Omit<ActiveWorkoutSession, "fichaId" | "profileId" | "startedAt">>;
@@ -45,8 +46,8 @@ export const useActiveWorkoutStore = create<ActiveWorkoutState>()(
             startedAt: Date.now(),
             completedIds: [],
             sessionSets: {},
-            drafts: {},
-            expandedId: null,
+            removedIds: [],
+            exerciseOverrides: {},
           },
         }),
       update: (patch) =>

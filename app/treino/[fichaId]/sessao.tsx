@@ -1,19 +1,19 @@
 import { Button } from "@presentation/components/ui/Button";
 import { Icon } from "@presentation/components/ui/Icon";
-import {
-  WorkoutExerciseFormRow,
-  WorkoutExerciseFormValues,
-} from "@presentation/components/features/WorkoutExerciseFormRow";
+import { PlanExerciseOptionsSheet } from "@presentation/components/features/PlanExerciseOptionsSheet";
+import { WorkoutExerciseFormRow } from "@presentation/components/features/WorkoutExerciseFormRow";
 import {
   WorkoutSetList,
   WorkoutSetValues,
   conformSets,
+  swappedSets,
 } from "@presentation/components/features/WorkoutSetList";
 import { useExercisePerformanceHistory } from "@presentation/hooks/useExercisePerformanceHistory";
 import { useExercises } from "@presentation/hooks/useExercises";
 import { useProfile } from "@presentation/hooks/useProfile";
 import { useWorkoutPlan } from "@presentation/hooks/useWorkoutPlan";
 import { useAppServices } from "@presentation/providers/AppServicesProvider";
+import { useConfirm } from "@presentation/providers/ConfirmProvider";
 import { useActiveWorkoutStore } from "@presentation/stores/activeWorkoutStore";
 import { colors } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
@@ -22,27 +22,11 @@ import { Exercise } from "@domain/entities/Exercise";
 import { WorkoutPlanExercise } from "@domain/entities/WorkoutPlanExercise";
 import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, { useAnimatedRef } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Sortable, { SortableGridRenderItem } from "react-native-sortables";
 import { toast } from "sonner-native";
-
-interface SeatAdjustments {
-  seatHeight: number | null;
-  seatDistance: number | null;
-  seatIncline: number | null;
-  seatLock: number | null;
-}
-
-function formatSeatAdjustments(planExercise: SeatAdjustments): string {
-  const parts = [
-    planExercise.seatHeight !== null ? `altura ${planExercise.seatHeight}` : null,
-    planExercise.seatDistance !== null ? `distância ${planExercise.seatDistance}` : null,
-    planExercise.seatIncline !== null ? `inclinação ${planExercise.seatIncline}` : null,
-    planExercise.seatLock !== null ? `trava ${planExercise.seatLock}` : null,
-  ].filter((part): part is string => part !== null);
-
-  return parts.length > 0 ? ` · ${parts.join(" · ")}` : "";
-}
 
 /**
  * Starts each set from what was lifted in the last session for this exercise,
@@ -62,17 +46,21 @@ function initialSets(
 
 export default function SessaoTreinoScreen() {
   const { fichaId } = useLocalSearchParams<{ fichaId: string }>();
-  const { plan, updateExercise } = useWorkoutPlan(fichaId);
+  const { plan, updateExercise, removeExercise, swapExercise, reorderExercises } =
+    useWorkoutPlan(fichaId);
+  const scrollableRef = useAnimatedRef<Animated.ScrollView>();
   const { profile } = useProfile();
   const services = useAppServices();
+  const confirm = useConfirm();
   const { exercises: allExercises } = useExercises("");
   const { entries: history } = useExercisePerformanceHistory(profile?.id);
   const navigation = useNavigation();
   const session = useActiveWorkoutStore((state) => state.session);
   const startSession = useActiveWorkoutStore((state) => state.start);
   const updateSession = useActiveWorkoutStore((state) => state.update);
-  const [savingId, setSavingId] = useState<string | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
+  // The plan exercise whose options sheet (swap / remove) is open.
+  const [optionsForId, setOptionsForId] = useState<string | null>(null);
 
   // The session lives in a persisted store so it survives Android killing the
   // app in the background; a session for another plan or user starts over.
@@ -80,8 +68,8 @@ export default function SessaoTreinoScreen() {
     session && session.fichaId === fichaId && session.profileId === profile?.id ? session : null;
   const completedIds = useMemo(() => new Set(current?.completedIds ?? []), [current?.completedIds]);
   const sessionSets = current?.sessionSets ?? {};
-  const drafts = current?.drafts ?? {};
-  const expandedId = current?.expandedId ?? null;
+  const removedIds = current?.removedIds;
+  const exerciseOverrides = current?.exerciseOverrides ?? {};
 
   useEffect(() => {
     if (profile && !current) startSession(fichaId, profile.id);
@@ -89,8 +77,7 @@ export default function SessaoTreinoScreen() {
 
   // Leaving the screen (close, back, finishing) ends the session for good.
   useEffect(
-    () =>
-      navigation.addListener("beforeRemove", () => useActiveWorkoutStore.getState().clear()),
+    () => navigation.addListener("beforeRemove", () => useActiveWorkoutStore.getState().clear()),
     [navigation],
   );
 
@@ -105,14 +92,119 @@ export default function SessaoTreinoScreen() {
     [history],
   );
 
+  // Exercises removed for this session only are hidden, but stay in the plan.
+  const planExercises = useMemo(
+    () => (plan?.exercises ?? []).filter((planExercise) => !removedIds?.includes(planExercise.id)),
+    [plan, removedIds],
+  );
+
   if (!plan || !profile) return null;
 
+  /** The exercise done today, which a swap for this session only may have changed. */
+  function exerciseIdFor(planExercise: WorkoutPlanExercise): string {
+    return exerciseOverrides[planExercise.id] ?? planExercise.exerciseId;
+  }
+
   function setsFor(planExercise: WorkoutPlanExercise): WorkoutSetValues[] {
-    const exercise = exercisesById.get(planExercise.exerciseId);
+    const exerciseId = exerciseIdFor(planExercise);
     return (
       sessionSets[planExercise.id] ??
-      initialSets(planExercise, lastSetsByExerciseId.get(planExercise.exerciseId), exercise)
+      initialSets(planExercise, lastSetsByExerciseId.get(exerciseId), exercisesById.get(exerciseId))
     );
+  }
+
+  const optionsFor = planExercises.find((planExercise) => planExercise.id === optionsForId);
+  const exerciseIdsInSession = new Set(planExercises.map(exerciseIdFor));
+
+  function withErrorToast(save: Promise<void>, fallback: string) {
+    save.catch((err: unknown) => toast.error(err instanceof Error ? err.message : fallback));
+  }
+
+  function handleSwap(planExercise: WorkoutPlanExercise, replacement: Exercise) {
+    const currentName = exercisesById.get(exerciseIdFor(planExercise))?.name ?? "o exercício";
+    const lastSets = lastSetsByExerciseId.get(replacement.id);
+    // Today's sets keep their count and reps, with the load from the new exercise.
+    const swapSession = (onlyToday: boolean) =>
+      updateSession((prev) => {
+        const overrides = { ...prev.exerciseOverrides };
+        if (onlyToday && replacement.id !== planExercise.exerciseId) {
+          overrides[planExercise.id] = replacement.id;
+        } else {
+          delete overrides[planExercise.id];
+        }
+        return {
+          exerciseOverrides: overrides,
+          sessionSets: {
+            ...prev.sessionSets,
+            [planExercise.id]: swappedSets(setsFor(planExercise), replacement, lastSets),
+          },
+          completedIds: prev.completedIds.filter((id) => id !== planExercise.id),
+        };
+      });
+
+    confirm({
+      title: "Trocar exercício",
+      message: `Trocar ${currentName} por ${replacement.name}?`,
+      actions: [
+        {
+          label: "Salvar na ficha",
+          variant: "primary",
+          onPress: () => {
+            swapSession(false);
+            withErrorToast(
+              swapExercise(
+                planExercise.id,
+                replacement.id,
+                swappedSets(planExercise.sets, replacement, lastSets),
+              ),
+              "Não foi possível trocar o exercício.",
+            );
+          },
+        },
+        { label: "Só neste treino", onPress: () => swapSession(true) },
+      ],
+    });
+  }
+
+  function handleRemove(planExercise: WorkoutPlanExercise) {
+    const name = exercisesById.get(exerciseIdFor(planExercise))?.name ?? "o exercício";
+    const dropFromSession = () =>
+      updateSession((prev) => ({
+        removedIds: [...(prev.removedIds ?? []), planExercise.id],
+        completedIds: prev.completedIds.filter((id) => id !== planExercise.id),
+      }));
+
+    confirm({
+      title: "Excluir exercício",
+      message: `Remover ${name}?`,
+      actions: [
+        { label: "Só neste treino", onPress: dropFromSession },
+        {
+          label: "Excluir da ficha",
+          variant: "danger",
+          onPress: () => {
+            dropFromSession();
+            withErrorToast(
+              removeExercise(planExercise.id),
+              "Não foi possível excluir o exercício.",
+            );
+          },
+        },
+      ],
+    });
+  }
+
+  /**
+   * Saves the new order of the exercises on screen; the ones removed for this
+   * session only keep their place in the plan.
+   */
+  function saveOrder(visible: readonly WorkoutPlanExercise[]) {
+    if (!plan) return;
+    const queue = visible.map((planExercise) => planExercise.id);
+    const ordered = plan.exercises.map((planExercise) =>
+      removedIds?.includes(planExercise.id) ? planExercise.id : (queue.shift() ?? planExercise.id),
+    );
+    withErrorToast(reorderExercises(ordered), "Não foi possível salvar a nova ordem.");
   }
 
   function toggleExercise(workoutPlanExerciseId: string) {
@@ -123,62 +215,13 @@ export default function SessaoTreinoScreen() {
     }));
   }
 
-  function toggleExpanded(workoutPlanExerciseId: string) {
-    updateSession((prev) => ({
-      expandedId: prev.expandedId === workoutPlanExerciseId ? null : workoutPlanExerciseId,
-    }));
-  }
-
-  function toDraftValues(planExercise: WorkoutPlanExercise): WorkoutExerciseFormValues {
-    return {
-      sets: planExercise.sets,
-      seatHeight: planExercise.seatHeight,
-      seatDistance: planExercise.seatDistance,
-      seatIncline: planExercise.seatIncline,
-      seatLock: planExercise.seatLock,
-    };
-  }
-
-  function updateDraft(
-    planExercise: WorkoutPlanExercise,
-    patch: Partial<WorkoutExerciseFormValues>,
+  // Seat adjustments are saved to the plan as they're typed, as on the edit screen.
+  function saveSeatAdjustment(
+    workoutPlanExerciseId: string,
+    patch: Parameters<typeof updateExercise>[1],
   ) {
-    updateSession((prev) => ({
-      drafts: {
-        ...prev.drafts,
-        [planExercise.id]: {
-          ...(prev.drafts[planExercise.id] ?? toDraftValues(planExercise)),
-          ...patch,
-        },
-      },
-    }));
-  }
-
-  async function saveDraft(planExercise: WorkoutPlanExercise) {
-    const workoutPlanExerciseId = planExercise.id;
-    const draft = drafts[workoutPlanExerciseId] ?? toDraftValues(planExercise);
-    setSavingId(workoutPlanExerciseId);
-    try {
-      // The sets are edited directly in the card, so saving to the plan takes
-      // today's sets along with the seat adjustments from the form.
-      await updateExercise(workoutPlanExerciseId, {
-        ...draft,
-        sets: setsFor(planExercise),
-      });
-      discardDraft(workoutPlanExerciseId);
-      toast.success("Exercício atualizado");
-    } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Não foi possível salvar o exercício.");
-    } finally {
-      setSavingId(null);
-    }
-  }
-
-  function discardDraft(workoutPlanExerciseId: string) {
-    updateSession((prev) => {
-      const next = { ...prev.drafts };
-      delete next[workoutPlanExerciseId];
-      return { drafts: next, expandedId: null };
+    updateExercise(workoutPlanExerciseId, patch).catch((err: unknown) => {
+      toast.error(err instanceof Error ? err.message : "Não foi possível salvar a alteração.");
     });
   }
 
@@ -186,22 +229,22 @@ export default function SessaoTreinoScreen() {
     if (!plan || !profile) return;
     setIsFinishing(true);
     try {
-      const completedExercises = plan.exercises
-        .filter((planExercise) => completedIds.has(planExercise.id))
-        .map((planExercise) => ({
-          exerciseId: planExercise.exerciseId,
-          sets: setsFor(planExercise),
-        }));
+      // Finishing the workout logs every exercise in it; the checkmarks are only
+      // there to help the user keep track of where they are.
+      const performedExercises = planExercises.map((planExercise) => ({
+        exerciseId: exerciseIdFor(planExercise),
+        sets: setsFor(planExercise),
+      }));
 
       await Promise.all([
         services.attendance.completeSession.execute({
           profileId: profile.id,
           workoutPlanId: plan.id,
         }),
-        completedExercises.length > 0
+        performedExercises.length > 0
           ? services.progress.logExercisePerformance.execute({
               profileId: profile.id,
-              entries: completedExercises,
+              entries: performedExercises,
             })
           : Promise.resolve(),
       ]);
@@ -213,7 +256,7 @@ export default function SessaoTreinoScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <Animated.ScrollView ref={scrollableRef} contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
@@ -228,26 +271,39 @@ export default function SessaoTreinoScreen() {
           </Text>
         </View>
         <Text style={styles.subtitle}>
-          {completedIds.size} de {plan.exercises.length} concluídos
+          {planExercises.filter((planExercise) => completedIds.has(planExercise.id)).length} de{" "}
+          {planExercises.length} concluídos
         </Text>
 
-        <View style={styles.list}>
-          {plan.exercises.map((planExercise, index) => {
-            const exercise = exercisesById.get(planExercise.exerciseId);
+        <Sortable.Grid
+          columns={1}
+          data={planExercises}
+          keyExtractor={(planExercise) => planExercise.id}
+          rowGap={10}
+          customHandle
+          scrollableRef={scrollableRef}
+          onDragEnd={({ data }) => saveOrder(data)}
+          renderItem={({
+            item: planExercise,
+            index,
+          }: Parameters<SortableGridRenderItem<WorkoutPlanExercise>>[0]) => {
+            const exercise = exercisesById.get(exerciseIdFor(planExercise));
             const sets = setsFor(planExercise);
             const done = completedIds.has(planExercise.id);
-            const expanded = expandedId === planExercise.id;
+            const swappedToday = exerciseOverrides[planExercise.id] !== undefined;
             return (
-              <View
-                style={[styles.exerciseCard, done && styles.exerciseCardDone]}
-                key={planExercise.id}
-              >
+              <View style={[styles.exerciseCard, done && styles.exerciseCardDone]}>
                 <Pressable
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: done }}
                   onPress={() => toggleExercise(planExercise.id)}
                   style={styles.exerciseRow}
                 >
+                  <Sortable.Handle>
+                    <View style={styles.dragHandleTouchArea}>
+                      <Icon name="grip" size={16} color={colors.textFaint} />
+                    </View>
+                  </Sortable.Handle>
                   <View style={[styles.checkbox, done && styles.checkboxDone]}>
                     {done ? (
                       <Icon name="check" size={13} color={colors.onPrimary} strokeWidth={2.4} />
@@ -259,22 +315,17 @@ export default function SessaoTreinoScreen() {
                     </Text>
                     <Text style={styles.exerciseMeta}>
                       {sets.length} {sets.length === 1 ? "série" : "séries"}
-                      {formatSeatAdjustments(planExercise)}
+                      {swappedToday ? " · trocado só hoje" : ""}
                     </Text>
                   </View>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={expanded ? "Recolher exercício" : "Editar exercício"}
-                    onPress={() => toggleExpanded(planExercise.id)}
-                    hitSlop={8}
-                    style={[styles.expandButton, expanded && styles.expandButtonOpen]}
+                    accessibilityLabel="Opções do exercício"
+                    onPress={() => setOptionsForId(planExercise.id)}
+                    hitSlop={6}
+                    style={styles.optionsButton}
                   >
-                    <Icon
-                      name="chevron-down"
-                      size={14}
-                      color={colors.textSecondary}
-                      strokeWidth={2.2}
-                    />
+                    <Icon name="more" size={15} color={colors.textSecondary} />
                   </Pressable>
                 </Pressable>
 
@@ -290,61 +341,50 @@ export default function SessaoTreinoScreen() {
                   />
                 </View>
 
-                {expanded
-                  ? (() => {
-                      const draft = drafts[planExercise.id] ?? planExercise;
-                      return (
-                        <View style={styles.expandedForm}>
-                          <View style={styles.expandedDivider} />
-                          <WorkoutExerciseFormRow
-                            exercise={exercise}
-                            planExercise={draft}
-                            hideHeader
-                            hideSets
-                            onChangeSets={(sets) => updateDraft(planExercise, { sets })}
-                            onChangeSeatHeight={(value) =>
-                              updateDraft(planExercise, { seatHeight: value })
-                            }
-                            onChangeSeatDistance={(value) =>
-                              updateDraft(planExercise, { seatDistance: value })
-                            }
-                            onChangeSeatIncline={(value) =>
-                              updateDraft(planExercise, { seatIncline: value })
-                            }
-                            onChangeSeatLock={(value) =>
-                              updateDraft(planExercise, { seatLock: value })
-                            }
-                          />
-                          <View style={styles.expandedActions}>
-                            <View style={styles.expandedActionButton}>
-                              <Button
-                                label="Cancelar"
-                                variant="secondary"
-                                onPress={() => discardDraft(planExercise.id)}
-                                disabled={savingId === planExercise.id}
-                              />
-                            </View>
-                            <View style={styles.expandedActionButton}>
-                              <Button
-                                label="Salvar"
-                                onPress={() => saveDraft(planExercise)}
-                                loading={savingId === planExercise.id}
-                              />
-                            </View>
-                          </View>
-                        </View>
-                      );
-                    })()
-                  : null}
+                {/* The plan's seat adjustments are for its own exercise, not today's swap. */}
+                {swappedToday ? null : (
+                  <WorkoutExerciseFormRow
+                    exercise={exercise}
+                    planExercise={planExercise}
+                    hideHeader
+                    hideSets
+                    onChangeSets={() => undefined}
+                    onChangeSeatHeight={(value) =>
+                      saveSeatAdjustment(planExercise.id, { seatHeight: value })
+                    }
+                    onChangeSeatDistance={(value) =>
+                      saveSeatAdjustment(planExercise.id, { seatDistance: value })
+                    }
+                    onChangeSeatIncline={(value) =>
+                      saveSeatAdjustment(planExercise.id, { seatIncline: value })
+                    }
+                    onChangeSeatLock={(value) =>
+                      saveSeatAdjustment(planExercise.id, { seatLock: value })
+                    }
+                  />
+                )}
               </View>
             );
-          })}
-        </View>
-      </ScrollView>
+          }}
+        />
+      </Animated.ScrollView>
 
       <View style={styles.footer}>
         <Button label="Concluir treino" onPress={handleFinish} loading={isFinishing} />
       </View>
+
+      <PlanExerciseOptionsSheet
+        visible={optionsFor !== undefined}
+        exercise={optionsFor ? exercisesById.get(exerciseIdFor(optionsFor)) : undefined}
+        excludedExerciseIds={exerciseIdsInSession}
+        onClose={() => setOptionsForId(null)}
+        onSwap={(replacement) => {
+          if (optionsFor) handleSwap(optionsFor, replacement);
+        }}
+        onRemove={() => {
+          if (optionsFor) handleRemove(optionsFor);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -366,7 +406,7 @@ const styles = StyleSheet.create({
   },
   title: { ...typography.screenTitle, color: colors.textPrimary, flexShrink: 1 },
   subtitle: { fontFamily: fontFamily.light, fontSize: 11.5, color: colors.textFaint },
-  list: { gap: 10 },
+  dragHandleTouchArea: { paddingVertical: 4, marginRight: -4 },
   exerciseCard: {
     backgroundColor: colors.surfaceRaised,
     borderRadius: 18,
@@ -380,24 +420,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.lg,
   },
-  expandButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  expandButtonOpen: { transform: [{ rotate: "180deg" }] },
   setList: { gap: 8, paddingHorizontal: 14, paddingBottom: 14 },
-  expandedForm: {},
-  expandedDivider: { height: 1, backgroundColor: colors.borderSubtle, marginBottom: 14 },
-  expandedActions: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-  },
-  expandedActionButton: { flex: 1 },
   checkbox: {
     width: 24,
     height: 24,
@@ -412,4 +435,12 @@ const styles = StyleSheet.create({
   exerciseName: { fontFamily: fontFamily.semiBold, fontSize: 15, color: colors.textPrimary },
   exerciseNameDone: { textDecorationLine: "line-through", color: colors.textSecondary },
   exerciseMeta: { fontFamily: fontFamily.light, fontSize: 12, color: colors.textMuted },
+  optionsButton: {
+    width: 28,
+    height: 28,
+    borderRadius: 9,
+    backgroundColor: colors.control,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });

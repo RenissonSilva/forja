@@ -11,6 +11,8 @@ import { GetWorkoutPlanUseCase } from "@application/workout-plans/GetWorkoutPlan
 import { AddExerciseToPlanUseCase } from "@application/workout-plans/AddExerciseToPlan.usecase";
 import { UpdateWorkoutPlanExerciseUseCase } from "@application/workout-plans/UpdateWorkoutPlanExercise.usecase";
 import { RemoveExerciseFromPlanUseCase } from "@application/workout-plans/RemoveExerciseFromPlan.usecase";
+import { ReorderPlanExercisesUseCase } from "@application/workout-plans/ReorderPlanExercises.usecase";
+import { SwapPlanExerciseUseCase } from "@application/workout-plans/SwapPlanExercise.usecase";
 import { MarkWorkoutPlanAsTodayUseCase } from "@application/workout-plans/MarkWorkoutPlanAsToday.usecase";
 import { ReorderWorkoutPlansUseCase } from "@application/workout-plans/ReorderWorkoutPlans.usecase";
 import { CompleteWorkoutSessionUseCase } from "@application/attendance/CompleteWorkoutSession.usecase";
@@ -26,6 +28,7 @@ import { GetMeasurementsHistoryUseCase } from "@application/progress/GetMeasurem
 import { LogExercisePerformanceUseCase } from "@application/progress/LogExercisePerformance.usecase";
 import { GetExercisePerformanceHistoryUseCase } from "@application/progress/GetExercisePerformanceHistory.usecase";
 import { GetExerciseProgressUseCase } from "@application/progress/GetExerciseProgress.usecase";
+import { GetWorkoutDayUseCase } from "@application/progress/GetWorkoutDay.usecase";
 import { SignUpWithEmailUseCase } from "@application/auth/SignUpWithEmail.usecase";
 import { SignInWithEmailUseCase } from "@application/auth/SignInWithEmail.usecase";
 import { SignInWithGoogleUseCase } from "@application/auth/SignInWithGoogle.usecase";
@@ -101,6 +104,8 @@ export function buildContainer(client: SupabaseClient) {
       addExercise: new AddExerciseToPlanUseCase(workoutPlanRepository, exerciseRepository),
       updateExercise: new UpdateWorkoutPlanExerciseUseCase(workoutPlanRepository),
       removeExercise: new RemoveExerciseFromPlanUseCase(workoutPlanRepository),
+      swapExercise: new SwapPlanExerciseUseCase(workoutPlanRepository, exerciseRepository),
+      reorderExercises: new ReorderPlanExercisesUseCase(workoutPlanRepository),
       markAsToday: new MarkWorkoutPlanAsTodayUseCase(workoutPlanRepository),
       reorder: new ReorderWorkoutPlansUseCase(workoutPlanRepository),
     },
@@ -133,6 +138,12 @@ export function buildContainer(client: SupabaseClient) {
       ),
       getExerciseProgress: new GetExerciseProgressUseCase(
         exerciseLogRepository,
+        exerciseRepository,
+      ),
+      getWorkoutDay: new GetWorkoutDayUseCase(
+        exerciseLogRepository,
+        attendanceRepository,
+        workoutPlanRepository,
         exerciseRepository,
       ),
     },

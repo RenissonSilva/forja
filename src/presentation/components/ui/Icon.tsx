@@ -22,6 +22,8 @@ export type IconName =
   | "grip"
   | "ruler"
   | "help-circle"
+  | "more"
+  | "swap"
   | "x";
 
 interface IconProps {
@@ -271,6 +273,26 @@ export function Icon({
             strokeLinejoin="round"
           />
           <Circle cx={12} cy={17} r={0.9} fill={color} />
+        </Svg>
+      );
+    case "more":
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <Circle cx={5.5} cy={12} r={1.7} fill={color} />
+          <Circle cx={12} cy={12} r={1.7} fill={color} />
+          <Circle cx={18.5} cy={12} r={1.7} fill={color} />
+        </Svg>
+      );
+    case "swap":
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+          <Path
+            d="M4 8h15M15.5 4.5L19 8l-3.5 3.5M20 16H5M8.5 12.5L5 16l3.5 3.5"
+            stroke={color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </Svg>
       );
     case "x":

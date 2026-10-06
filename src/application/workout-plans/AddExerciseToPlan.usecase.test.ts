@@ -45,6 +45,20 @@ describe("AddExerciseToPlanUseCase", () => {
     expect(stored?.exercises).toHaveLength(1);
   });
 
+  it("uses the id given by the caller", async () => {
+    const { workoutPlanRepository, exerciseRepository } = await seedPlanAndExercise();
+    const useCase = new AddExerciseToPlanUseCase(workoutPlanRepository, exerciseRepository);
+
+    const updated = await useCase.execute({
+      workoutPlanId: "plan-1",
+      workoutPlanExerciseId: "plan-exercise-1",
+      exerciseId: "exercise-1",
+      sets: [{ reps: 10, loadKg: 60 }],
+    });
+
+    expect(updated.exercises[0]?.id).toBe("plan-exercise-1");
+  });
+
   it("fails when the workout plan does not exist", async () => {
     const { workoutPlanRepository, exerciseRepository } = await seedPlanAndExercise();
     const useCase = new AddExerciseToPlanUseCase(workoutPlanRepository, exerciseRepository);

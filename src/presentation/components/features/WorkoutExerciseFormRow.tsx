@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { Exercise } from "@domain/entities/Exercise";
 import { colors } from "../../theme/colors";
@@ -26,9 +26,22 @@ interface WorkoutExerciseFormRowProps {
   onChangeSeatIncline: (value: number | null) => void;
   onChangeSeatLock: (value: number | null) => void;
   onRemove?: () => void;
+  /** Shows a ⋯ button (instead of the remove one) for more actions on the exercise. */
+  onOpenOptions?: () => void;
   hideHeader?: boolean;
   /** Hides the per-set list when the sets are edited elsewhere (e.g. during a session). */
   hideSets?: boolean;
+  /** Rendered before the order badge, e.g. a drag handle for reordering. */
+  dragHandle?: React.ReactNode;
+}
+
+function hasSeatValues(values: WorkoutExerciseFormValues): boolean {
+  return (
+    values.seatHeight !== null ||
+    values.seatDistance !== null ||
+    values.seatIncline !== null ||
+    values.seatLock !== null
+  );
 }
 
 function parseSeatValue(text: string): number | null {
@@ -48,13 +61,19 @@ export function WorkoutExerciseFormRow({
   onChangeSeatIncline,
   onChangeSeatLock,
   onRemove,
+  onOpenOptions,
   hideHeader = false,
   hideSets = false,
+  dragHandle,
 }: WorkoutExerciseFormRowProps) {
+  // The seat adjustments start closed unless some value is already saved.
+  const [seatOpen, setSeatOpen] = useState(() => hasSeatValues(planExercise));
+
   return (
     <View style={hideHeader ? styles.bareContainer : styles.container}>
       {hideHeader ? null : (
         <View style={styles.header}>
+          {dragHandle}
           <View style={styles.orderBadge}>
             <Text style={styles.orderLabel}>{order}</Text>
           </View>
@@ -71,7 +90,16 @@ export function WorkoutExerciseFormRow({
               size={26}
             />
           ) : null}
-          {onRemove ? (
+          {onOpenOptions ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Opções do exercício"
+              onPress={onOpenOptions}
+              style={styles.removeButton}
+            >
+              <Icon name="more" size={15} color={colors.textSecondary} />
+            </Pressable>
+          ) : onRemove ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Remover exercício"
@@ -89,55 +117,68 @@ export function WorkoutExerciseFormRow({
       )}
 
       <View style={styles.seatSection}>
-        <Text style={styles.seatLabel}>
-          REGULAGENS <Text style={styles.seatLabelOptional}>(opcional)</Text>
-        </Text>
-        <View style={styles.seatGrid}>
-          <View style={styles.seatField}>
-            <Text style={styles.seatFieldLabel}>ALTURA</Text>
-            <TextInput
-              value={planExercise.seatHeight?.toString() ?? ""}
-              onChangeText={(text) => onChangeSeatHeight(parseSeatValue(text))}
-              placeholder="-"
-              placeholderTextColor={colors.textFaint}
-              keyboardType="numeric"
-              style={styles.seatInput}
-            />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: seatOpen }}
+          onPress={() => setSeatOpen((open) => !open)}
+          hitSlop={8}
+          style={styles.seatToggle}
+        >
+          <Text style={styles.seatLabel}>
+            REGULAGENS <Text style={styles.seatLabelOptional}>(opcional)</Text>
+          </Text>
+          <View style={seatOpen && styles.seatChevronOpen}>
+            <Icon name="chevron-down" size={13} color={colors.textMuted} strokeWidth={2.2} />
           </View>
-          <View style={styles.seatField}>
-            <Text style={styles.seatFieldLabel}>DISTÂNCIA</Text>
-            <TextInput
-              value={planExercise.seatDistance?.toString() ?? ""}
-              onChangeText={(text) => onChangeSeatDistance(parseSeatValue(text))}
-              placeholder="-"
-              placeholderTextColor={colors.textFaint}
-              keyboardType="numeric"
-              style={styles.seatInput}
-            />
+        </Pressable>
+        {seatOpen ? (
+          <View style={styles.seatGrid}>
+            <View style={styles.seatField}>
+              <Text style={styles.seatFieldLabel}>ALTURA</Text>
+              <TextInput
+                value={planExercise.seatHeight?.toString() ?? ""}
+                onChangeText={(text) => onChangeSeatHeight(parseSeatValue(text))}
+                placeholder="-"
+                placeholderTextColor={colors.textFaint}
+                keyboardType="numeric"
+                style={styles.seatInput}
+              />
+            </View>
+            <View style={styles.seatField}>
+              <Text style={styles.seatFieldLabel}>DISTÂNCIA</Text>
+              <TextInput
+                value={planExercise.seatDistance?.toString() ?? ""}
+                onChangeText={(text) => onChangeSeatDistance(parseSeatValue(text))}
+                placeholder="-"
+                placeholderTextColor={colors.textFaint}
+                keyboardType="numeric"
+                style={styles.seatInput}
+              />
+            </View>
+            <View style={styles.seatField}>
+              <Text style={styles.seatFieldLabel}>INCLINAÇÃO</Text>
+              <TextInput
+                value={planExercise.seatIncline?.toString() ?? ""}
+                onChangeText={(text) => onChangeSeatIncline(parseSeatValue(text))}
+                placeholder="-"
+                placeholderTextColor={colors.textFaint}
+                keyboardType="numeric"
+                style={styles.seatInput}
+              />
+            </View>
+            <View style={styles.seatField}>
+              <Text style={styles.seatFieldLabel}>TRAVA</Text>
+              <TextInput
+                value={planExercise.seatLock?.toString() ?? ""}
+                onChangeText={(text) => onChangeSeatLock(parseSeatValue(text))}
+                placeholder="-"
+                placeholderTextColor={colors.textFaint}
+                keyboardType="numeric"
+                style={styles.seatInput}
+              />
+            </View>
           </View>
-          <View style={styles.seatField}>
-            <Text style={styles.seatFieldLabel}>INCLINAÇÃO</Text>
-            <TextInput
-              value={planExercise.seatIncline?.toString() ?? ""}
-              onChangeText={(text) => onChangeSeatIncline(parseSeatValue(text))}
-              placeholder="-"
-              placeholderTextColor={colors.textFaint}
-              keyboardType="numeric"
-              style={styles.seatInput}
-            />
-          </View>
-          <View style={styles.seatField}>
-            <Text style={styles.seatFieldLabel}>TRAVA</Text>
-            <TextInput
-              value={planExercise.seatLock?.toString() ?? ""}
-              onChangeText={(text) => onChangeSeatLock(parseSeatValue(text))}
-              placeholder="-"
-              placeholderTextColor={colors.textFaint}
-              keyboardType="numeric"
-              style={styles.seatInput}
-            />
-          </View>
-        </View>
+        ) : null}
       </View>
     </View>
   );
@@ -191,6 +232,8 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   seatLabelOptional: { opacity: 0.6 },
+  seatToggle: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  seatChevronOpen: { transform: [{ rotate: "180deg" }] },
   seatGrid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   seatField: { flexBasis: "47%", flexGrow: 1, gap: 6 },
   seatFieldLabel: {

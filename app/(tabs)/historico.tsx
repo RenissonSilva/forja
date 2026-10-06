@@ -4,17 +4,20 @@ import { ProgressBar } from "@presentation/components/ui/ProgressBar";
 import { MonthCalendar } from "@presentation/components/features/MonthCalendar";
 import { MuscleGroupStatsChart } from "@presentation/components/features/MuscleGroupStatsChart";
 import { ExerciseProgressOverview } from "@presentation/components/features/ExerciseProgressOverview";
+import { WorkoutDaySheet } from "@presentation/components/features/WorkoutDaySheet";
 import { useMonthlyOverview } from "@presentation/hooks/useMonthlyOverview";
 import { useMuscleGroupStats } from "@presentation/hooks/useMuscleGroupStats";
 import { useExerciseProgress } from "@presentation/hooks/useExerciseProgress";
 import { useProfile } from "@presentation/hooks/useProfile";
+import { useWorkoutDay } from "@presentation/hooks/useWorkoutDay";
 import { colors } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
 import { fontFamily, typography } from "@presentation/theme/typography";
+import { DateKey } from "@shared/date-utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { router } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -26,6 +29,10 @@ export default function HistoricoScreen() {
   const { items: exerciseProgress, isLoading: isExerciseProgressLoading } = useExerciseProgress(
     profile?.id,
   );
+  // The date outlives the sheet so its content stays put while it slides away.
+  const [selectedDate, setSelectedDate] = useState<DateKey | null>(null);
+  const [isDaySheetVisible, setIsDaySheetVisible] = useState(false);
+  const { day: workoutDay } = useWorkoutDay(profile?.id, selectedDate);
 
   if (!profile) return null;
 
@@ -73,6 +80,10 @@ export default function HistoricoScreen() {
             days={days}
             onPreviousMonth={goToPreviousMonth}
             onNextMonth={goToNextMonth}
+            onSelectDay={(day) => {
+              setSelectedDate(day.dateKey);
+              setIsDaySheetVisible(true);
+            }}
           />
         </Card>
 
@@ -89,6 +100,13 @@ export default function HistoricoScreen() {
           />
         </Card>
       </ScrollView>
+
+      <WorkoutDaySheet
+        visible={isDaySheetVisible}
+        onClose={() => setIsDaySheetVisible(false)}
+        date={selectedDate}
+        day={workoutDay}
+      />
     </SafeAreaView>
   );
 }

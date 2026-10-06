@@ -3,6 +3,7 @@ import { fontFamily } from "@presentation/theme/typography";
 import { useAuth } from "@presentation/hooks/useAuth";
 import { useProfile } from "@presentation/hooks/useProfile";
 import { AppServicesProvider } from "@presentation/providers/AppServicesProvider";
+import { ConfirmProvider } from "@presentation/providers/ConfirmProvider";
 import { ExerciseInfoIndexProvider } from "@presentation/providers/ExerciseInfoIndexProvider";
 import { useActiveWorkoutStore } from "@presentation/stores/activeWorkoutStore";
 import { StatusBar } from "expo-status-bar";
@@ -20,7 +21,9 @@ export default function RootLayout() {
         <StatusBar style="light" />
         <AppServicesProvider>
           <ExerciseInfoIndexProvider>
-            <RootNavigator />
+            <ConfirmProvider>
+              <RootNavigator />
+            </ConfirmProvider>
           </ExerciseInfoIndexProvider>
         </AppServicesProvider>
         <Toaster

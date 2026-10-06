@@ -1,5 +1,6 @@
 import { ExerciseLog } from "@domain/entities/ExerciseLog";
 import { ExerciseLogRepository } from "@domain/repositories/ExerciseLogRepository";
+import { DateKey } from "@shared/date-utils";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   SupabaseExerciseLogMapper,
@@ -15,6 +16,17 @@ export class SupabaseExerciseLogRepository implements ExerciseLogRepository {
       .select("*")
       .eq("profile_id", profileId)
       .order("date", { ascending: true })
+      .returns<SupabaseExerciseLogRow[]>();
+    if (error) throw error;
+    return (data ?? []).map(SupabaseExerciseLogMapper.toDomain);
+  }
+
+  async findByDate(profileId: string, date: DateKey): Promise<ExerciseLog[]> {
+    const { data, error } = await this.client
+      .from("exercise_logs")
+      .select("*")
+      .eq("profile_id", profileId)
+      .eq("date", date)
       .returns<SupabaseExerciseLogRow[]>();
     if (error) throw error;
     return (data ?? []).map(SupabaseExerciseLogMapper.toDomain);

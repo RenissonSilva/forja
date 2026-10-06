@@ -2,25 +2,41 @@ import { Button } from "@presentation/components/ui/Button";
 import { Icon } from "@presentation/components/ui/Icon";
 import { ExerciseCatalogItem } from "@presentation/components/features/ExerciseCatalogItem";
 import { MuscleGroupFilter } from "@presentation/components/features/MuscleGroupFilter";
+import { PlanExerciseOptionsSheet } from "@presentation/components/features/PlanExerciseOptionsSheet";
 import { WorkoutExerciseFormRow } from "@presentation/components/features/WorkoutExerciseFormRow";
-import { defaultSetsFor } from "@presentation/components/features/WorkoutSetList";
+import { defaultSetsFor, swappedSets } from "@presentation/components/features/WorkoutSetList";
+import { useExercisePerformanceHistory } from "@presentation/hooks/useExercisePerformanceHistory";
 import { useExercises } from "@presentation/hooks/useExercises";
+import { useProfile } from "@presentation/hooks/useProfile";
 import { useWorkoutPlan } from "@presentation/hooks/useWorkoutPlan";
+import { useConfirm } from "@presentation/providers/ConfirmProvider";
 import { colors } from "@presentation/theme/colors";
 import { spacing } from "@presentation/theme/spacing";
 import { fontFamily, typography } from "@presentation/theme/typography";
-import { MuscleGroup } from "@domain/entities/Exercise";
+import { Exercise, MuscleGroup } from "@domain/entities/Exercise";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import Animated, { useAnimatedRef } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Sortable, { SortableGridRenderItem } from "react-native-sortables";
 import { toast } from "sonner-native";
 
 type EditorMode = "config" | "catalog";
 
 export default function EditarFichaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { plan, addExercise, updateExercise, removeExercise, rename, remove } = useWorkoutPlan(id);
+  const {
+    plan,
+    addExercise,
+    updateExercise,
+    removeExercise,
+    swapExercise,
+    reorderExercises,
+    rename,
+    remove,
+  } = useWorkoutPlan(id);
+  const scrollableRef = useAnimatedRef<Animated.ScrollView>();
   const [mode, setMode] = useState<EditorMode>("config");
   const [nameDraft, setNameDraft] = useState("");
   const [syncedPlanId, setSyncedPlanId] = useState<string | undefined>(undefined);
@@ -28,6 +44,11 @@ export default function EditarFichaScreen() {
   const [muscleGroupFilter, setMuscleGroupFilter] = useState<MuscleGroup | null>(null);
   const { exercises: allExercises } = useExercises("");
   const { exercises: searchResults } = useExercises(query, muscleGroupFilter ?? undefined);
+  const { profile } = useProfile();
+  const { entries: history } = useExercisePerformanceHistory(profile?.id);
+  const confirm = useConfirm();
+  // The plan exercise whose options sheet (swap / remove) is open.
+  const [optionsForId, setOptionsForId] = useState<string | null>(null);
 
   // Adjust local draft state when a different plan finishes loading (React's
   // documented pattern for syncing state from a prop, without an effect).
@@ -49,7 +70,22 @@ export default function EditarFichaScreen() {
     [plan],
   );
 
+  const planExercises = useMemo(() => [...(plan?.exercises ?? [])], [plan]);
+
+  // History is ordered by date ascending, so the last write per exercise wins.
+  const lastSetsByExerciseId = useMemo(
+    () => new Map(history.map((entry) => [entry.exerciseId, entry.setDetails])),
+    [history],
+  );
+
+  const exerciseIdsInPlan = useMemo(
+    () => new Set(planExerciseByExerciseId.keys()),
+    [planExerciseByExerciseId],
+  );
+
   if (!plan) return null;
+
+  const optionsFor = plan.exercises.find((planExercise) => planExercise.id === optionsForId);
 
   async function saveName() {
     if (!plan || nameDraft.trim().length === 0 || nameDraft === plan.name) return;
@@ -75,27 +111,58 @@ export default function EditarFichaScreen() {
     router.back();
   }
 
+  // Changes are saved as they happen; a failed save must not go unnoticed.
+  function withErrorToast(save: Promise<void>) {
+    save.catch((err: unknown) => {
+      toast.error(err instanceof Error ? err.message : "Não foi possível salvar a alteração.");
+    });
+  }
+
   function toggleExercise(exerciseId: string) {
     const existing = planExerciseByExerciseId.get(exerciseId);
     if (existing) {
-      removeExercise(existing.id);
+      withErrorToast(removeExercise(existing.id));
     } else {
-      addExercise({
-        exerciseId,
-        sets: defaultSetsFor(exercisesById.get(exerciseId)),
-      });
+      withErrorToast(
+        addExercise({
+          exerciseId,
+          sets: defaultSetsFor(exercisesById.get(exerciseId)),
+        }),
+      );
     }
   }
 
-  function handleDelete() {
-    Alert.alert(
-      "Excluir treino",
-      "Tem certeza que deseja excluir este treino? Essa ação não pode ser desfeita.",
-      [
-        { text: "Cancelar", style: "cancel" },
+  function handleSwap(workoutPlanExerciseId: string, replacement: Exercise) {
+    const current = plan?.exercises.find(
+      (planExercise) => planExercise.id === workoutPlanExerciseId,
+    );
+    if (!current) return;
+    const sets = swappedSets(current.sets, replacement, lastSetsByExerciseId.get(replacement.id));
+    withErrorToast(swapExercise(workoutPlanExerciseId, replacement.id, sets));
+  }
+
+  function confirmRemoveExercise(workoutPlanExerciseId: string, name: string) {
+    confirm({
+      title: "Excluir exercício",
+      message: `Remover ${name} deste treino?`,
+      actions: [
         {
-          text: "Excluir",
-          style: "destructive",
+          label: "Excluir",
+          variant: "danger",
+          onPress: () => withErrorToast(removeExercise(workoutPlanExerciseId)),
+        },
+      ],
+    });
+  }
+
+  function handleDelete() {
+    confirm({
+      title: "Excluir treino",
+      message: "Tem certeza que deseja excluir este treino? Essa ação não pode ser desfeita.",
+      actions: [
+        {
+          label: "Excluir",
+          variant: "danger",
           onPress: async () => {
             try {
               await remove();
@@ -109,12 +176,13 @@ export default function EditarFichaScreen() {
           },
         },
       ],
-    );
+    });
   }
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-      <ScrollView
+      <Animated.ScrollView
+        ref={scrollableRef}
         style={styles.scroll}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
@@ -169,28 +237,48 @@ export default function EditarFichaScreen() {
               <Text style={styles.sectionCount}>{plan.exercises.length} exercícios</Text>
             </View>
 
-            <View style={styles.exercisesList}>
-              {plan.exercises.map((planExercise, index) => (
+            <Sortable.Grid
+              columns={1}
+              data={planExercises}
+              keyExtractor={(planExercise) => planExercise.id}
+              rowGap={10}
+              customHandle
+              scrollableRef={scrollableRef}
+              onDragEnd={({ data }) =>
+                withErrorToast(reorderExercises(data.map((planExercise) => planExercise.id)))
+              }
+              renderItem={({
+                item: planExercise,
+                index,
+              }: Parameters<SortableGridRenderItem<(typeof planExercises)[number]>>[0]) => (
                 <WorkoutExerciseFormRow
-                  key={planExercise.id}
                   order={index + 1}
                   exercise={exercisesById.get(planExercise.exerciseId)}
                   planExercise={planExercise}
-                  onChangeSets={(sets) => updateExercise(planExercise.id, { sets })}
+                  dragHandle={
+                    <Sortable.Handle>
+                      <View style={styles.dragHandleTouchArea}>
+                        <Icon name="grip" size={16} color={colors.textFaint} />
+                      </View>
+                    </Sortable.Handle>
+                  }
+                  onChangeSets={(sets) => withErrorToast(updateExercise(planExercise.id, { sets }))}
                   onChangeSeatHeight={(value) =>
-                    updateExercise(planExercise.id, { seatHeight: value })
+                    withErrorToast(updateExercise(planExercise.id, { seatHeight: value }))
                   }
                   onChangeSeatDistance={(value) =>
-                    updateExercise(planExercise.id, { seatDistance: value })
+                    withErrorToast(updateExercise(planExercise.id, { seatDistance: value }))
                   }
                   onChangeSeatIncline={(value) =>
-                    updateExercise(planExercise.id, { seatIncline: value })
+                    withErrorToast(updateExercise(planExercise.id, { seatIncline: value }))
                   }
-                  onChangeSeatLock={(value) => updateExercise(planExercise.id, { seatLock: value })}
-                  onRemove={() => removeExercise(planExercise.id)}
+                  onChangeSeatLock={(value) =>
+                    withErrorToast(updateExercise(planExercise.id, { seatLock: value }))
+                  }
+                  onOpenOptions={() => setOptionsForId(planExercise.id)}
                 />
-              ))}
-            </View>
+              )}
+            />
           </>
         ) : (
           <>
@@ -222,7 +310,7 @@ export default function EditarFichaScreen() {
             </View>
           </>
         )}
-      </ScrollView>
+      </Animated.ScrollView>
 
       <View style={styles.footer}>
         {mode === "config" ? (
@@ -231,6 +319,21 @@ export default function EditarFichaScreen() {
           <Button label="Continuar" onPress={() => setMode("config")} />
         )}
       </View>
+
+      <PlanExerciseOptionsSheet
+        visible={optionsFor !== undefined}
+        exercise={optionsFor ? exercisesById.get(optionsFor.exerciseId) : undefined}
+        excludedExerciseIds={exerciseIdsInPlan}
+        onClose={() => setOptionsForId(null)}
+        onSwap={(replacement) => {
+          if (optionsFor) handleSwap(optionsFor.id, replacement);
+        }}
+        onRemove={() => {
+          if (!optionsFor) return;
+          const name = exercisesById.get(optionsFor.exerciseId)?.name ?? "o exercício";
+          confirmRemoveExercise(optionsFor.id, name);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -320,5 +423,5 @@ const styles = StyleSheet.create({
   exercisesHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   sectionTitle: { ...typography.heading, color: colors.textPrimary },
   sectionCount: { fontFamily: fontFamily.medium, fontSize: 11.5, color: colors.textMuted },
-  exercisesList: { gap: 10 },
+  dragHandleTouchArea: { paddingVertical: 5, paddingRight: 2 },
 });

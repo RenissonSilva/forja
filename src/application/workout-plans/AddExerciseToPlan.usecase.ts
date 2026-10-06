@@ -22,7 +22,7 @@ export class AddExerciseToPlanUseCase {
     if (!exercise) throw new ExerciseNotFoundError(input.exerciseId);
 
     const planExerciseResult = WorkoutPlanExercise.create({
-      id: generateId(),
+      id: input.workoutPlanExerciseId ?? generateId(),
       exerciseId: input.exerciseId,
       order: 0,
       sets: input.sets,

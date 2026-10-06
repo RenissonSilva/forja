@@ -14,6 +14,8 @@ interface MonthCalendarProps {
   days: MonthDayAttendanceSummary[];
   onPreviousMonth: () => void;
   onNextMonth: () => void;
+  /** Called for trained days only — the others have nothing to show. */
+  onSelectDay?: (day: MonthDayAttendanceSummary) => void;
 }
 
 export function MonthCalendar({
@@ -21,6 +23,7 @@ export function MonthCalendar({
   days,
   onPreviousMonth,
   onNextMonth,
+  onSelectDay,
 }: MonthCalendarProps) {
   const weeks = chunk(days, 7);
   const monthLabel = capitalize(format(referenceDate, "MMMM yyyy", { locale: ptBR }));
@@ -64,26 +67,39 @@ export function MonthCalendar({
         <View key={weekIndex} style={styles.weekRow}>
           {week.map((day) => {
             const trained = day.attendance !== null;
-            return (
-              <View key={day.dateKey} style={styles.dayCell}>
-                <View
+            const circle = (
+              <View
+                style={[
+                  styles.circle,
+                  trained && styles.circleTrained,
+                  day.isToday && styles.circleToday,
+                ]}
+              >
+                <Text
                   style={[
-                    styles.circle,
-                    trained && styles.circleTrained,
-                    day.isToday && styles.circleToday,
+                    styles.dayNumber,
+                    trained && styles.dayNumberHighlighted,
+                    day.isToday && styles.dayNumberToday,
+                    !day.isInCurrentMonth && styles.dayNumberOutOfMonth,
                   ]}
                 >
-                  <Text
-                    style={[
-                      styles.dayNumber,
-                      trained && styles.dayNumberHighlighted,
-                      day.isToday && styles.dayNumberToday,
-                      !day.isInCurrentMonth && styles.dayNumberOutOfMonth,
-                    ]}
-                  >
-                    {day.date.getDate()}
-                  </Text>
-                </View>
+                  {day.date.getDate()}
+                </Text>
+              </View>
+            );
+            return trained && onSelectDay ? (
+              <Pressable
+                key={day.dateKey}
+                accessibilityRole="button"
+                accessibilityLabel={`Ver treino de ${format(day.date, "d 'de' MMMM", { locale: ptBR })}`}
+                onPress={() => onSelectDay(day)}
+                style={({ pressed }) => [styles.dayCell, pressed && styles.dayCellPressed]}
+              >
+                {circle}
+              </Pressable>
+            ) : (
+              <View key={day.dateKey} style={styles.dayCell}>
+                {circle}
               </View>
             );
           })}
@@ -149,6 +165,7 @@ const styles = StyleSheet.create({
   },
   weekRow: { flexDirection: "row", marginBottom: 3, justifyContent: "space-between" },
   dayCell: { flex: 1, alignItems: "center" },
+  dayCellPressed: { opacity: 0.6 },
   circle: {
     width: 40,
     height: 40,

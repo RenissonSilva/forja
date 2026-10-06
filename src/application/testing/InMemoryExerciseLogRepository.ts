@@ -1,5 +1,6 @@
 import { ExerciseLog } from "@domain/entities/ExerciseLog";
 import { ExerciseLogRepository } from "@domain/repositories/ExerciseLogRepository";
+import { DateKey } from "@shared/date-utils";
 
 export class InMemoryExerciseLogRepository implements ExerciseLogRepository {
   private readonly items = new Map<string, ExerciseLog>();
@@ -8,6 +9,12 @@ export class InMemoryExerciseLogRepository implements ExerciseLogRepository {
     return [...this.items.values()]
       .filter((entry) => entry.profileId === profileId)
       .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  async findByDate(profileId: string, date: DateKey): Promise<ExerciseLog[]> {
+    return [...this.items.values()].filter(
+      (entry) => entry.profileId === profileId && entry.date === date,
+    );
   }
 
   async saveMany(entries: ExerciseLog[]): Promise<void> {

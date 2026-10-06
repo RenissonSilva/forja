@@ -4,7 +4,7 @@ import { colors } from "../../theme/colors";
 import { fontFamily } from "../../theme/typography";
 import { RadialGlow } from "./RadialGlow";
 
-type ButtonVariant = "primary" | "dashed" | "secondary";
+type ButtonVariant = "primary" | "dashed" | "secondary" | "danger" | "ghost";
 
 interface ButtonProps {
   label: string;
@@ -99,12 +99,16 @@ const labelStyles = StyleSheet.create({
   primary: { color: colors.onPrimary },
   dashed: { color: colors.primary },
   secondary: { color: colors.textPrimary },
+  danger: { color: colors.dangerText },
+  ghost: { color: colors.textSecondary },
 });
 
 const indicatorColors: Record<ButtonVariant, string> = {
   primary: colors.onPrimary,
   dashed: colors.primary,
   secondary: colors.textPrimary,
+  danger: colors.dangerText,
+  ghost: colors.textSecondary,
 };
 
 const variantStyles = StyleSheet.create({
@@ -125,4 +129,8 @@ const variantStyles = StyleSheet.create({
   secondary: {
     backgroundColor: colors.control,
   },
+  danger: {
+    backgroundColor: colors.dangerMuted,
+  },
+  ghost: {},
 });

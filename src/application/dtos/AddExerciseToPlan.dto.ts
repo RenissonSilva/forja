@@ -2,6 +2,8 @@ import { z } from "zod";
 
 export const addExerciseToPlanSchema = z.object({
   workoutPlanId: z.string().min(1),
+  /** Lets the caller pick the id, so it can show the exercise before the save completes. */
+  workoutPlanExerciseId: z.string().min(1).optional(),
   exerciseId: z.string().min(1),
   sets: z
     .array(

@@ -87,6 +87,26 @@ describe("WorkoutPlan#replaceExercise", () => {
   });
 });
 
+describe("WorkoutPlan#reorderExercises", () => {
+  const plan = makePlan()
+    .addExercise(makeExercise("a"))
+    .addExercise(makeExercise("b"))
+    .addExercise(makeExercise("c"));
+
+  it("puts the exercises in the given order and re-sequences them", () => {
+    const reordered = plan.reorderExercises(["c", "a", "b"]);
+
+    expect(reordered.exercises.map((e) => e.id)).toEqual(["c", "a", "b"]);
+    expect(reordered.exercises.map((e) => e.order)).toEqual([0, 1, 2]);
+  });
+
+  it("keeps exercises missing from the list at the end and ignores unknown ids", () => {
+    const reordered = plan.reorderExercises(["c", "x", "a"]);
+
+    expect(reordered.exercises.map((e) => e.id)).toEqual(["c", "a", "b"]);
+  });
+});
+
 describe("WorkoutPlan#reorder", () => {
   it("updates the plan's order", () => {
     const plan = makePlan();

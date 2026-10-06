@@ -50,6 +50,28 @@ export function conformSets(
   return sets.map((set) => ({ reps: set.reps >= 1 ? set.reps : DEFAULT_REPS, loadKg: set.loadKg }));
 }
 
+/**
+ * Sets for an exercise swapped into another's place: keeps how many sets there
+ * were and their reps, but the load (and time) come from the last session of
+ * the new exercise — the old exercise's load means nothing for it.
+ */
+export function swappedSets(
+  sets: readonly WorkoutSetValues[],
+  exercise: Exercise | undefined,
+  lastSets: readonly WorkoutSetValues[] | undefined,
+): WorkoutSetValues[] {
+  const swapped = sets.map((set, index): WorkoutSetValues => {
+    const previous = lastSets?.[index] ?? lastSets?.[lastSets.length - 1];
+    const durationSeconds = previous?.durationSeconds ?? set.durationSeconds;
+    return {
+      reps: set.reps,
+      loadKg: previous?.loadKg ?? 0,
+      ...(durationSeconds !== undefined ? { durationSeconds } : {}),
+    };
+  });
+  return conformSets(swapped, exercise);
+}
+
 interface WorkoutSetListProps {
   sets: readonly WorkoutSetValues[];
   /** Decides between reps and time, and whether load is shown. */
@@ -122,7 +144,8 @@ export function WorkoutSetList({ sets: rawSets, exercise, onChange }: WorkoutSet
                 value={set.loadKg}
                 min={0}
                 max={500}
-                step={2.5}
+                step={5}
+                decimal
                 onChange={(value) => updateSet(index, { loadKg: value })}
               />
             </View>

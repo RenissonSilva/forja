@@ -4,20 +4,32 @@ import { Exercise } from "@domain/entities/Exercise";
 import { colors } from "../../theme/colors";
 import { muscleGroupLabels } from "../../theme/muscleGroups";
 import { fontFamily } from "../../theme/typography";
-import { Icon } from "../ui/Icon";
+import { Icon, IconName } from "../ui/Icon";
 import { ExerciseHelpButton } from "./ExerciseHelpButton";
 
 interface ExerciseCatalogItemProps {
   exercise: Exercise;
   selected?: boolean;
   onAdd: () => void;
+  /** Turns the add/remove toggle into a single pick action shown with this icon. */
+  pickIcon?: IconName;
 }
 
-export function ExerciseCatalogItem({ exercise, selected, onAdd }: ExerciseCatalogItemProps) {
+export function ExerciseCatalogItem({
+  exercise,
+  selected,
+  onAdd,
+  pickIcon,
+}: ExerciseCatalogItemProps) {
+  const accessibilityLabel = pickIcon
+    ? `Escolher ${exercise.name}`
+    : selected
+      ? `Remover ${exercise.name}`
+      : `Adicionar ${exercise.name}`;
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={selected ? `Remover ${exercise.name}` : `Adicionar ${exercise.name}`}
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected: !!selected }}
       onPress={onAdd}
       style={[styles.row, selected && styles.rowSelected]}
@@ -29,7 +41,7 @@ export function ExerciseCatalogItem({ exercise, selected, onAdd }: ExerciseCatal
       <ExerciseHelpButton exerciseName={exercise.name} isCustom={exercise.isCustom} size={22} />
       <View style={[styles.addButton, selected && styles.addButtonSelected]}>
         <Icon
-          name={selected ? "check" : "plus"}
+          name={pickIcon ?? (selected ? "check" : "plus")}
           size={14}
           color={selected ? colors.onPrimary : colors.primary}
           strokeWidth={2.6}
